@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Diablo/PoE Lite - v5</title>
+<style>
+  :root{
+    --bg:#7a7d82; --panel:#d6d7da; --ink:#222; --chip:#4b4d52; --chipInk:#eee;
+    --blue:#3b82f6; --green:#22c55e; --red:#ef4444; --yellow:#fbbf24; --uniq:#f87171; --mag:#60a5fa; --norm:#9ca3af;
+    --card-w:170px; --card-h:230px;
+  }
+  *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  
+  html, body{
+    margin:0;
+    background:var(--bg);
+    color:#111;
+    text-align:center;
+    height: 100%;
+    overflow: hidden;
+  }
+  body{overflow-y: auto;}
+
+  button{cursor:pointer;border:none;border-radius:12px;padding:10px 18px;font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .btn{background:var(--blue);color:#fff;}
+  .btn-danger{
+    background:#ef4444;
+    color:#fff;
+    box-shadow:0 2px 0 rgba(0,0,0,.25), inset 0 -2px 0 rgba(0,0,0,.25);
+  }
+  .hidden{display:none !important;}
+  /* start */
+  #startScreen{height:100vh;display:grid;place-items:center;}
+  /* arena */
+  #arenaScreen{padding:18px; height: 100%;}
+  .topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-bottom:6px; max-width:1476px; margin: 0 auto 6px;}
+  .chip{background:var(--chip);color:var(--chipInk);padding:6px 12px;border-radius:16px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15);font-weight:800;font-size:14px}
+  .essence{font-weight:900;padding:6px 10px;background:#fff;border-radius:10px;border:1px solid #bbb}
+  .arenaFrame{
+    background:var(--panel);
+    border-radius:8px;
+    box-shadow:0 6px 0 rgba(0,0,0,.25), inset 0 0 0 2px #999;
+    padding:8px; 
+    position:relative;
+    display:inline-block;
+  }
+  canvas{
+    display:block;
+    margin:0 auto;
+    background:transparent;
+    border-radius:4px;
+    box-shadow:inset 0 0 0 2px #aaa;
+    position:relative;
+    z-index: 2;
+    touch-action: none; /* Prevents default touch actions like zoom/pan */
+  }
+  .timerBox{position:absolute;left:50%;transform:translateX(-50%);top:8px;background:#666;color:#fff;padding:8px 10px;border-radius:10px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25);font-size:16px;font-weight:900}
+  .timerBox.danger{background:#b91c1c; animation:pulse 1s infinite}
+  @keyframes pulse{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.08)}100%{transform:translateX(-50%) scale(1)}}
+  .pauseBadge{position:absolute;right:14px;top:6px;background:#111;color:#fff;padding:4px 8px;border-radius:8px;opacity:.8;display:none}
+  .paused .pauseBadge{display:block}
+  .chipRow{position:absolute;left:50%;transform:translateX(-50%);top:-36px;display:flex;gap:10px;align-items:center;justify-content:center}
+  
+  .xpBar{
+    position:absolute;
+    left:12px;
+    right:12px;
+    bottom:12px;
+    height:22px;
+    border-radius:12px;
+    background:#444;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.35);
+    overflow:hidden;
+    z-index: 1;
+  }
+  .xpFill{height:100%;background:var(--green);width:0%;position:absolute;left:0;top:0;z-index:1}
+  .xpBar span{position:relative;z-index:2}
+  
+  /* build screen layout */
+  #buildScreen{
+    text-align:left;
+    padding:12px;
+    height:100%;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1.5fr 1fr;
+    grid-template-rows: minmax(0, 1fr); 
+    gap:12px;
+    max-width:1200px;
+    margin:0 auto;
+    width:100%;
+    height:100%;
+  }
+  
+  .grid > .panel:first-child {
+    display: flex;
+    flex-direction: column;
+    min-width: calc(4 * var(--card-w) + 3 * 10px + 16px);
+    overflow: hidden; 
+  }
+  .panel{background:#eee8;border-radius:18px;box-shadow:0 8px 0 rgba(0,0,0,.25), inset 0 0 0 2px #b2b2b2}
+  .panel h2{margin:0;padding:10px 14px;background:linear-gradient(#e5e7eb,#d1d5db);border-radius:18px 18px 0 0;font-size:22px;text-shadow:0 2px #fff}
+
+  .lootControls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 12px;
+  }
+  .lootControls .essence{
+    margin-left:auto;
+    font-size:14px;
+    padding: 4px 8px;
+  }
+  .lootControls button.pill{
+    border-radius:8px;
+    padding:6px 12px;
+    font-size:12px;
+  }
+
+  .lootWrap{
+    overflow-y: auto; 
+    padding: 8px;
+    flex: 1; 
+    min-height: 0;
+  }
+  .lootWrap::-webkit-scrollbar { width: 8px; }
+  .lootWrap::-webkit-scrollbar-track { background: #00000022; border-radius:4px; }
+  .lootWrap::-webkit-scrollbar-thumb { background: var(--chip); border-radius: 4px; }
+  .lootWrap::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  .lootGrid{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); 
+    gap: 10px;
+    align-content: start;
+  }
+  .inv{padding:12px;display:grid;grid-template-columns:repeat(3,var(--card-w));gap:10px;align-content:start;justify-content:center}
+  .slot{background:#d1d5db;border-radius:14px;padding:0;width:var(--card-w);height:var(--card-h);position:relative;display:grid;place-items:center;text-align:center;border:2px dashed #a3a3a3}
+  .slot .placeholder{font-size:24px;opacity:.5}
+  .rightCol{
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+    gap:12px;
+  }
+  .asideBtns{display:flex;gap:10px;align-items:center;justify-content:center;padding:2px 0 12px}
+  .next{position:sticky;top:10px;align-self:start;padding:14px 12px;border-radius:16px;background:#fff;box-shadow:0 8px 0 rgba(0,0,0,.25);font-weight:900}
+  .sortWrap{display:flex;gap:8px;align-items:center;padding:0px 12px 8px 12px;}
+  select{padding:6px 10px;border-radius:10px;border:1px solid #bbb;background:#fff;font-weight:700}
+  .ghost{opacity:.5}
+  /* card */
+  .icard{width:var(--card-w);height:var(--card-h);border-radius:16px;background:#444;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.25);position:relative;user-select:none;overflow:hidden;display:flex;flex-direction:column}
+  .icard .ic-top{height:44px;display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:16px 16px 0 0}
+  .icard .ic-type{font-size:18px;line-height:1}
+  .icard .ic-rar{font-weight:900;padding:3px 8px;border-radius:999px;background:#222;color:#fff;font-size:12px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.35)}
+  .icard .ic-lock{background:transparent;box-shadow:none;font-size:18px;padding:0 2px}
+  .icard .ic-name{font-weight:900;text-align:center;padding:8px 10px 4px;line-height:1.05}
+  .icard .ic-sep{height:2px;background:#fff6;margin:6px 10px 4px;border-radius:1px}
+  .icard .ic-aff{font-size:12px;line-height:1.25;padding:1px 10px;border-radius:8px}
+  .icard .ic-aff .val{font-weight:900}
+  .icard .ic-foot{margin-top:auto;height:6px;background:#0002}
+  .icard.sel{outline:3px solid #3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.35) inset,0 6px 0 rgba(0,0,0,.25)}
+  .icard.locked::after{content:"";position:absolute;inset:0;border:3px solid #ffd54a88;border-radius:16px;pointer-events:none}
+  .rarN{background:#3b3b40}
+  .rarM{background:#1f3d69}
+  .rarR{background:#6b5700}
+  .rarU{background:#6b1f1f}
+  .rarN .ic-top{background:var(--norm);color:#222}
+  .rarM .ic-top{background:var(--mag)}
+  .rarR .ic-top{background:var(--yellow);color:#222}
+  .rarU .ic-top{background:var(--uniq)}
+  .icard .ic-aff.hl{background:#6fb6ff;color:#fff;box-shadow:0 0 0 2px #dff1ff inset}
+  /* modals */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal>div{background:#fff;border-radius:14px;min-width:min(92vw,560px);padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+  /* stats list */
+  .statList{padding:10px 14px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .statList div{line-height:1.4}
+</style>
+</head>
+<body>
+  <section id="startScreen">
+    <button class="btn" id="startBtn">Start</button>
+  </section>
+
+  <section id="arenaScreen" class="hidden">
+    <div class="topbar">
+      <div class="essence">Essence: <span id="essCount">0</span></div>
+      <button id="pauseBtn" class="btn">Duraklat</button>
+    </div>
+    <div class="arenaFrame" id="arenaFrame">
+      <div class="chipRow">
+        <div class="chip">phase:<span id="hudPhase">1</span></div>
+        <div class="chip">kill:<span id="hudKill">0</span></div>
+        <div class="chip">level:<span id="hudLevel">1</span></div>
+      </div>
+      <div class="timerBox" id="timerBox"><span id="timerLabel">45.00s</span></div>
+      <div class="pauseBadge">PAUSED</div>
+      <canvas id="game" width="1476" height="846"></canvas>
+      <div class="xpBar"><div class="xpFill" id="xpFill"></div><span id="xpLabel"></span></div>
+    </div>
+  </section>
+
+  <section id="buildScreen" class="hidden">
+    <div class="grid">
+      <div class="panel">
+        <h2>Loot</h2>
+        <div class="lootControls">
+          <button class="pill" id="dismSel">Dismantle Selected</button>
+          <button class="pill" id="clearSel">Clear Selection</button>
+          <button class="pill btn-danger" id="dismAll">Dismantle All</button>
+          <div class="essence">Essence: <span id="essCountBuild">0</span></div>
+        </div>
+        <div class="sortWrap">
+          <strong>Sort</strong>
+          <label>By Type
+            <select id="sortTypeSel"><option value="">All</option></select>
+          </label>
+          <label>By Stat
+            <select id="sortStat"><option value="">-</option></select>
+          </label>
+        </div>
+        <div class="lootWrap"><div class="lootGrid" id="lootGrid"></div></div>
+      </div>
+
+      <div class="rightCol">
+        <div class="panel">
+          <h2>Inventory</h2>
+          <div class="inv" id="invGrid"></div>
+          <div class="asideBtns">
+            <button id="upgradeBtn" class="btn">Upgrade Selected</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Stats</h2>
+          <div class="statList" id="statPanel"></div>
+        </div>
+        <button class="next" id="nextPhase">Next Phase</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal hidden" id="levelModal">
+    <div>
+      <h3 style="margin:0 0 10px">Seviye atladın! Bir stat seç (Magic Find hariç)</h3>
+      <div class="options" id="levelOptions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="confirmModal">
+    <div style="text-align:center">
+      <h3 style="margin-top:0">Dismantle all unlocked items?</h3>
+      <p>This cannot be undone.</p>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button id="confirmYes" class="btn">✔️ Yes</button>
+        <button id="confirmNo" class="btn">❌ Cancel</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Helpers */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rand=(a,b)=>Math.random()*(b-a)+a;
+const randi=(a,b)=>Math.floor(rand(a,b+1));
+const choice=a=>a[Math.floor(Math.random()*a.length)];
+const now=()=>performance.now();
+const fmt=(n,d=2)=>Number.parseFloat(n).toFixed(d);
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+/* Constants */
+const STAT_KEYS=["Damage","Attack Speed","Maximum Life","Life Regen","Armor","Crit Chance","Crit Damage","Move Speed","Magic Find"];
+const TYPE_KEYS=["Gun","Helmet","Chest","Boots","Belt","Ring"];
+const TYPE_EMOJI={Gun:"🔫",Helmet:"👑",Chest:"🥻",Boots:"👞",Belt:"🩹",Ring:"💍"};
+const LOCK_EMOJI={lock:"🔐",unlock:"🔓"};
+const RAR={N:"NORMAL",M:"MAGICAL",R:"RARE",U:"UNIQUE"};
+const RAR_ORDER=["N","M","R","U"];
+const RAR_AFFIX={N:2,M:3,R:4,U:5};
+const RAR_ESSENCE={N:1,M:3,R:10,U:30};
+const UPGRADE_COST={N:3,M:10,R:30,U:30};
+
+const T_TIERS=[1,2,3,4,5];
+const AFFIX_RANGES={
+  "Damage":{T1:[10,14],T2:[7,10],T3:[5,7],T4:[3,5],T5:[1,3],unit:"flat"},
+  "Attack Speed":{T1:[18,24],T2:[13,18],T3:[9,13],T4:[5,9],T5:[2,5],unit:"pct"},
+  "Maximum Life":{T1:[20,28],T2:[14,20],T3:[10,14],T4:[6,10],T5:[3,6],unit:"flat"},
+  "Life Regen":{T1:[1.0,1.5],T2:[0.7,1.0],T3:[0.4,0.7],T4:[0.2,0.4],T5:[0.1,0.2],unit:"flat"},
+  "Armor":{T1:[10,16],T2:[7,10],T3:[4,7],T4:[2,4],T5:[1,2],unit:"flat"},
+  "Crit Chance":{T1:[5,7],T2:[3.5,5],T3:[2.5,3.5],T4:[1.5,2.5],T5:[0.5,1.5],unit:"pct"},
+  "Crit Damage":{T1:[40,60],T2:[30,40],T3:[20,30],T4:[10,20],T5:[5,10],unit:"pct"},
+  "Move Speed":{T1:[8,12],T2:[6,8],T3:[4,6],T4:[2,4],T5:[1,2],unit:"pct"},
+  "Magic Find":{T1:[15,22],T2:[11,15],T3:[7,11],T4:[4,7],T5:[2,4],unit:"pct"},
+};
+const LEVEL_UP_CHOICES=[
+  {k:"Damage",apply:p=>{p.base.damage+=2},label:"+2 Damage"},
+  {k:"Attack Speed",apply:p=>{p.base.attackSpeed*=1.05},label:"+%5 Attack Speed"},
+  {k:"Maximum Life",apply:p=>{p.base.maxLife+=5;p.life=Math.min(p.life+5,p.base.maxLife)},label:"+5 Maximum Life"},
+  {k:"Life Regen",apply:p=>{p.base.lifeRegen+=0.5},label:"+0.5 Life Regen"},
+  {k:"Armor",apply:p=>{p.base.armor+=2},label:"+2 Armor"},
+  {k:"Crit Chance",apply:p=>{p.base.critChance+=1},label:"+1% Crit Chance"},
+  {k:"Crit Damage",apply:p=>{p.base.critDamage+=10},label:"+10% Crit Damage"},
+  {k:"Move Speed",apply:p=>{p.base.moveSpeed*=1.03},label:"+%3 Move Speed"},
+];
+
+const PHASE_SCALE=phase=>({hpMul:1+0.15*(phase-1),dmgMul:1+0.12*(phase-1),spdMul:1+0.04*(phase-1),spawnMul:1+0.08*(phase-1)});
+const BASE_DROP=0.06, RAINBOW_RATE=0.04;
+
+/* Item */
+class Item{
+  constructor({type,rarity,name,affixes,id}){this.id=id||uid();this.type=type;this.rarity=rarity;this.name=name||ItemNameGen.random(type,rarity);this.affixes=affixes||Item.rollAffixes(rarity);this.locked=false;this.selected=false;}
+  static rollAffixes(r){const c=RAR_AFFIX[r];const used=new Set();const aff=[];for(let i=0;i<c;i++){let s;let tries=0;do{s=choice(STAT_KEYS);tries++;}while(used.has(s)&&tries<20);used.add(s);const t=choice(T_TIERS);const range=AFFIX_RANGES[s]["T"+t];const v=rand(range[0],range[1]);aff.push({stat:s,tier:t,value:v});}return aff;}
+  essenceYield(){return RAR_ESSENCE[this.rarity]}
+  upgrade(){const i=RAR_ORDER.indexOf(this.rarity);if(i<RAR_ORDER.length-1){this.rarity=RAR_ORDER[i+1];let s;const used=new Set(this.affixes.map(a=>a.stat));let tries=0;do{s=choice(STAT_KEYS);tries++;}while(used.has(s)&&tries<20);const t=choice(T_TIERS),range=AFFIX_RANGES[s]["T"+t],v=rand(range[0],range[1]);this.affixes.push({stat:s,tier:t,value:v});}else{this.affixes=this.affixes.map(a=>{const t=choice(T_TIERS),range=AFFIX_RANGES[a.stat]["T"+t],v=rand(range[0],range[1]);return {stat:a.stat,tier:t,value:v};});}}
+  static affixHTML(a){const unit=AFFIX_RANGES[a.stat].unit;const val=unit==="pct"?`${fmt(a.value)}%`:`${fmt(a.value)}`;return `<div class="ic-aff" data-stat="${a.stat}">${a.stat} <span class="val">+${val}</span> (T${a.tier})</div>`;}
+  toHTML(context="loot"){
+    const c=document.createElement("div"); c.className="icard rar"+this.rarity; c.draggable=true; c.dataset.id=this.id; c.dataset.ctx=context;
+    const rarText=RAR[this.rarity], emoji=TYPE_EMOJI[this.type]||"🞄";
+    c.innerHTML=`<div class="ic-top"><div class="ic-type">${emoji}</div><div class="ic-rar">${rarText}</div><button class="ic-lock" title="lock/unlock">${this.locked?LOCK_EMOJI.lock:LOCK_EMOJI.unlock}</button></div><div class="ic-name">${this.name.replace(" ","<br>")}</div><div class="ic-sep"></div><div class="ic-body" style="flex:1;display:block;overflow:auto">${this.affixes.map(a=>Item.affixHTML(a)).join("")}</div><div class="ic-foot"></div>`;
+    c.querySelector(".ic-lock").onclick=e=>{e.stopPropagation();this.locked=!this.locked;UI.renderLoot();UI.renderInventory();};
+    c.addEventListener("click",()=>{
+      if(context==="inventory"){
+        for(const k of Object.keys(Game.player.inv)){const it=Game.player.inv[k];if(it) it.selected=false;}
+        for(const it of Game.player.loot) it.selected=false;
+        this.selected=!this.selected;
+      }else{
+        this.selected=!this.selected;
+      }
+      UI.renderLoot(); UI.renderInventory();
+    });
+    c.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",JSON.stringify({kind:"item",id:this.id}));c.classList.add("ghost");});
+    c.addEventListener("dragend",()=>c.classList.remove("ghost"));
+    c.querySelectorAll(".ic-aff").forEach(el=>{el.addEventListener("mouseenter",()=>UI.setHoverStat(el.dataset.stat));el.addEventListener("mouseleave",()=>UI.setHoverStat(""));});
+    if(this.selected)c.classList.add("sel"); if(this.locked)c.classList.add("locked"); return c;
+  }
+}
+const ItemNameGen={adj:{Gun:["Rusty","Blessed","Blazing","Steel","Worn","Basic","Copper","Ashborn","Burning","Short"],Helmet:["Plain","Iron","Worn","Cracked","Guardian","Bronze"],Chest:["Worn","Iron","Leather","Chain","Guardian"],Boots:["Worn","Runner","Greaves","Swift","Leather"],Belt:["Leather","Worn","Iron","Heavy","Steel","Strap"],Ring:["Plain","Copper","Silver","Golden"]},noun:{Gun:["Pistol","Handgun","Revolver","Flintlock"],Helmet:["Helm","Crown","Cap"],Chest:["Plate","Armor","Mail"],Boots:["Shoes","Greaves","Boots"],Belt:["Belt","Strap","Girdle"],Ring:["Ring","Loop"]},random(type,rar){const a=choice(this.adj[type]||["Old"]);const n=choice(this.noun[type]||["Thing"]);return `${a} ${n}`;}};
+
+/* Player */
+class Player{
+  constructor(x,y){this.x=x;this.y=y;this.r=16;this.dir={x:1,y:0};
+    this.base={damage:8,attackSpeed:2.2,maxLife:25,lifeRegen:0.0,armor:5,critChance:3,critDamage:124,moveSpeed:160,magicFind:20};
+    this.life=this.base.maxLife;this.level=1;this.kill=0;this.phase=1;this.xp=0;this.xpNext=10;
+    this.inv={Gun:null,Helmet:null,Chest:null,Boots:null,Belt:null,Ring:null};this.loot=[];this.essence=0;this.cooldown=0;}
+  derived(){const sum={flat:{},pct:{}};const add=(k,v,u)=>{if(u==="pct"){sum.pct[k]=(sum.pct[k]||0)+v;}else{sum.flat[k]=(sum.flat[k]||0)+v;}};for(const t of TYPE_KEYS){const it=this.inv[t];if(!it)continue;for(const a of it.affixes){const u=AFFIX_RANGES[a.stat].unit;add(a.stat,a.value,u);}}const s={damage:this.base.damage+(sum.flat["Damage"]||0),attackSpeed:this.base.attackSpeed*(1+(sum.pct["Attack Speed"]||0)/100),maxLife:this.base.maxLife+(sum.flat["Maximum Life"]||0),lifeRegen:this.base.lifeRegen+(sum.flat["Life Regen"]||0),armor:this.base.armor+(sum.flat["Armor"]||0),critChance:this.base.critChance+(sum.pct["Crit Chance"]||0),critDamage:this.base.critDamage+(sum.pct["Crit Damage"]||0),moveSpeed:this.base.moveSpeed*(1+(sum.pct["Move Speed"]||0)/100),magicFind:this.base.magicFind+(sum.pct["Magic Find"]||0)};this.life=Math.min(this.life,s.maxLife);return s;}
+  dps(){const s=this.derived();const c=1+(s.critChance/100)*(s.critDamage/100-1);return s.damage*s.attackSpeed*c;}
+  gainXP(n){this.xp+=n;if(this.xp>=this.xpNext){this.xp-=this.xpNext;this.level++;this.xpNext+=5;UI.updateHUD();Game.pause(true);UI.showLevelUp();}UI.updateXP();}
+  takeDamage(a){const s=this.derived();const mitig=a*(100/(100+s.armor));this.life-=mitig;if(this.life<0)this.life=0;}
+  heal(a){const s=this.derived();this.life=Math.min(s.maxLife,this.life+a);}
+}
+
+/* Enemy */
+class Enemy{
+  constructor(x,y,phase,type="normal",rainbow=false){
+    const sc=PHASE_SCALE(phase);
+    this.x=x;this.y=y;
+    this.type=type;
+    let baseHp=12, baseDmg=6, baseSpd=80;
+
+    switch(type){
+      case 'brute':
+        this.r = 14 * 1.12;
+        this.shape = 'pentagon';
+        this.color = '#a855f7';
+        this.xp = 3;
+        baseHp *= 2;
+        baseDmg *= 1.5;
+        baseSpd *= 0.75;
+        break;
+      case 'slime':
+        this.r = 14 * 2;
+        this.shape = 'circle';
+        this.color = '#84cc16';
+        this.xp = 5;
+        baseHp *= 4;
+        baseSpd *= 0.25;
+        break;
+      case 'rusher':
+        this.r = 14 * 0.5;
+        this.shape = 'circle';
+        this.color = '#f59e0b';
+        this.xp = 1;
+        baseHp *= 0.5;
+        baseSpd *= 1.5;
+        break;
+      case 'normal':
+      default:
+        this.r = 14;
+        this.shape = 'circle';
+        this.color = rainbow?"#a78bfa":choice(["#ef4444","#f59e0b","#10b981","#60a5fa","#eab308"]);
+        this.xp = 1;
+        break;
+    }
+    
+    this.maxLife=baseHp*sc.hpMul;
+    this.life=this.maxLife;
+    this.damage=baseDmg*sc.dmgMul;
+    this.speed=baseSpd*sc.spdMul;
+    this.rainbow=rainbow;
+    this.hitCD=0;
+    this.stunCD=0;
+    this.showHP=false;
+  }
+}
+
+/* Game */
+const Game={canvas:null,ctx:null,w:1476,h:846,frame:null,paused:false,player:null,bullets:[],enemies:[],lastTime:0,timer:45.0,spawnClock:0,floaters:[],state:"start",
+init(){this.canvas=document.getElementById("game");this.ctx=this.canvas.getContext("2d");this.frame=document.getElementById("arenaFrame");this.player=new Player(this.w/2,this.h/2);UI.populateSortOptions();UI.renderInventory();UI.renderStats();this.bindControls();UI.syncEssence();},
+startArena(){this.state="arena";this.timer=45.0;this.enemies=[];this.bullets=[];this.floaters=[];this.player.kill=0;this.spawnClock=0;document.getElementById("startScreen").classList.add("hidden");document.getElementById("buildScreen").classList.add("hidden");document.getElementById("arenaScreen").classList.remove("hidden");UI.updateHUD();UI.updateXP();this.lastTime=now();this.loop();},
+endArenaToBuild(){this.state="build";document.getElementById("arenaScreen").classList.add("hidden");document.getElementById("buildScreen").classList.remove("hidden");UI.renderLoot();UI.renderInventory();UI.renderStats();UI.syncEssence();},
+nextPhase(){this.player.phase++;this.startArena();},
+bindControls(){
+  const keys={},mouse={x:0,y:0,down:false};
+  const touchMove = {id:null, startX:0, startY:0, dx:0, dy:0};
+  const touchShoot = {id:null, x:0, y:0, active:false};
+
+  // Mouse controls
+  window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;});
+  window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false;});
+  this.canvas.addEventListener("mousemove",e=>{const r=this.canvas.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;});
+  this.canvas.addEventListener("mousedown",()=>{mouse.down=true;});
+  window.addEventListener("mouseup",()=>{mouse.down=false;});
+  
+  // Touch controls
+  const getTouchPos = (touch) => {
+    const r=this.canvas.getBoundingClientRect();
+    return {x: touch.clientX - r.left, y: touch.clientY - r.top};
+  }
+  this.canvas.addEventListener("touchstart", e => {
+    e.preventDefault();
+    for(const touch of e.changedTouches){
+      const pos = getTouchPos(touch);
+      if(pos.x < this.w / 2 && touchMove.id === null){ // Left side for movement
+        touchMove.id = touch.identifier;
+        touchMove.startX = pos.x;
+        touchMove.startY = pos.y;
+      } else if (pos.x >= this.w / 2 && touchShoot.id === null){ // Right side for shooting
+        touchShoot.id = touch.identifier;
+        touchShoot.x = pos.x;
+        touchShoot.y = pos.y;
+        touchShoot.active = true;
+      }
+    }
+  });
+  this.canvas.addEventListener("touchmove", e => {
+    e.preventDefault();
+    for(const touch of e.changedTouches){
+      const pos = getTouchPos(touch);
+      if(touch.identifier === touchMove.id){
+        const dx = pos.x - touchMove.startX;
+        const dy = pos.y - touchMove.startY;
+        const l = Math.hypot(dx, dy) || 1;
+        touchMove.dx = dx/l;
+        touchMove.dy = dy/l;
+      } else if(touch.identifier === touchShoot.id){
+        touchShoot.x = pos.x;
+        touchShoot.y = pos.y;
+      }
+    }
+  });
+  this.canvas.addEventListener("touchend", e => {
+    e.preventDefault();
+    for(const touch of e.changedTouches){
+      if(touch.identifier === touchMove.id){
+        touchMove.id = null;
+        touchMove.dx = 0;
+        touchMove.dy = 0;
+      } else if(touch.identifier === touchShoot.id){
+        touchShoot.id = null;
+        touchShoot.active = false;
+      }
+    }
+  });
+
+  const step=dt=>{
+    if(this.state!=="arena"||this.paused)return;
+    const s=this.player.derived(),sp=s.moveSpeed;
+    
+    // --- Movement (Keyboard + Touch) ---
+    let vx=0,vy=0;
+    if(keys["w"])vy-=1;if(keys["s"])vy+=1;if(keys["a"])vx-=1;if(keys["d"])vx+=1;
+    if(touchMove.id !== null) { vx += touchMove.dx; vy += touchMove.dy; }
+    if(vx !== 0 || vy !== 0){
+      const l=Math.hypot(vx,vy)||1;
+      this.player.x=clamp(this.player.x+(vx/l)*sp*dt,0+this.player.r,this.w-this.player.r);
+      this.player.y=clamp(this.player.y+(vy/l)*sp*dt,0+this.player.r,this.h-this.player.r);
+    }
+
+    // --- Aiming (Touch has priority) ---
+    if(touchShoot.active){
+      const dx = touchShoot.x - this.player.x, dy = touchShoot.y - this.player.y;
+      const l = Math.hypot(dx, dy) || 1;
+      this.player.dir={x:dx/l,y:dy/l};
+    } else {
+      const dx = mouse.x - this.player.x, dy = mouse.y - this.player.y;
+      const l = Math.hypot(dx, dy) || 1;
+      this.player.dir={x:dx/l,y:dy/l};
+    }
+    
+    this.player.heal(s.lifeRegen*dt);
+    if(this.player.cooldown>0){this.player.cooldown-=dt;}
+    
+    // --- Shooting (Mouse OR Touch) ---
+    if((mouse.down || touchShoot.active) && this.player.cooldown<=0){
+      const off=20;
+      const px=this.player.x+this.player.dir.x*(this.player.r+off),py=this.player.y+this.player.dir.y*(this.player.r+off);
+      const speed=420;
+      this.bullets.push({x:px,y:py,vx:this.player.dir.x*speed,vy:this.player.dir.y*speed,life:1.5});
+      this.player.cooldown=1/s.attackSpeed;
+    }
+  };
+  this.updateControls=step;
+},
+pause(v){this.paused=v!==undefined?v:!this.paused;this.frame.classList.toggle("paused",this.paused);document.getElementById("pauseBtn").textContent=this.paused?"Devam":"Duraklat";},
+spawnEnemy(){const side=randi(0,3);let x,y;if(side===0){x=rand(0,this.w);y=-20;}if(side===2){x=rand(0,this.w);y=this.h+20;}if(side===1){x=this.w+20;y=rand(0,this.h);}if(side===3){x=-20;y=rand(0,this.h);}const rainbow=Math.random()<RAINBOW_RATE;
+    const r = Math.random();
+    let type = 'normal';
+    if (r < 0.04) { type = 'slime'; } 
+    else if (r < 0.08) { type = 'brute'; }
+    else if (r < 0.18) { type = 'rusher'; }
+    this.enemies.push(new Enemy(x,y,this.player.phase,type,rainbow));
+},
+update(dt){this.updateControls(dt);this.timer-=dt;if(this.timer<=0){this.endArenaToBuild();return;}UI.updateTimer(this.timer);const sc=PHASE_SCALE(this.player.phase),baseSpawn=1.3;this.spawnClock-=dt;if(this.spawnClock<=0){this.spawnEnemy();this.spawnClock=baseSpawn/sc.spawnMul;}for(const b of this.bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;}this.bullets=this.bullets.filter(b=>b.life>0&&b.x>-30&&b.x<this.w+30&&b.y>-30&&b.y<this.h+30);
+  for(const e of this.enemies){
+    if (e.stunCD > 0) {
+      e.stunCD -= dt;
+    } else {
+      const dx=this.player.x-e.x,dy=this.player.y-e.y,d=Math.hypot(dx,dy)||1;
+      e.x+=(dx/d)*e.speed*dt;
+      e.y+=(dy/d)*e.speed*dt;
+    }
+    const sumR=e.r+this.player.r;const nd=Math.hypot(this.player.x-e.x,this.player.y-e.y)||1;if(nd<sumR){const nx=(e.x-this.player.x)/nd,ny=(e.y-this.player.y)/nd,push=sumR-nd;e.x+=nx*push;e.y+=ny*push;e.hitCD-=dt;if(e.hitCD<=0){this.player.takeDamage(e.damage); e.stunCD = 1/3; e.hitCD=0.6;}}else{e.hitCD-=dt;}
+  }
+  const s=this.player.derived();for(const b of this.bullets){for(const e of this.enemies){const dx=e.x-b.x,dy=e.y-b.y;if(dx*dx+dy*dy<(e.r+5)*(e.r+5)){let dmg=s.damage,crit=false;if(Math.random()<s.critChance/100){dmg*=(s.critDamage/100);crit=true;}e.life-=dmg;e.showHP=true;this.floaters.push({x:e.x,y:e.y-e.r-18,text:Math.round(dmg),color:crit?"#ef4444":"#9ca3af",size:crit?14:12,vy:-20,life:1.0});b.life=0;}}}const killed=this.enemies.filter(e=>e.life<=0);
+  if(killed.length){
+    for(const e of killed){
+      this.player.kill++;
+      this.player.gainXP(e.xp);
+      if(e.type === 'slime') {
+        for (let i = 0; i < 4; i++) {
+          const offsetX = rand(-15, 15);
+          const offsetY = rand(-15, 15);
+          this.enemies.push(new Enemy(e.x + offsetX, e.y + offsetY, this.player.phase, 'rusher'));
+        }
+      }
+      const mf=this.player.derived().magicFind;const dropChance=e.rainbow?1:(BASE_DROP*(1+mf/100));if(Math.random()<dropChance){const r=Math.random();const rar = (r<0.82)?"N": (r<0.98)?"M": (r<0.999)?"R":"U";const type=choice(TYPE_KEYS);const item=new Item({type,rarity:rar});this.player.loot.unshift(item);const color=rar==="N"?"#9ca3af":rar==="M"?"#60a5fa":rar==="R"?"#fbbf24":"#ef4444";this.floaters.push({x:e.x,y:e.y,text:"+1 item",color,size:14,vy:-18,life:1.2});}
+    }
+    this.enemies=this.enemies.filter(e=>e.life>0);UI.updateHUD();
+  }
+  for(const f of this.floaters){f.y+=f.vy*dt;f.life-=dt;}this.floaters=this.floaters.filter(f=>f.life>0);if(this.player.life<=0){this.player.life=this.player.derived().maxLife;this.endArenaToBuild();return;}},
+render(){const ctx=this.ctx;ctx.clearRect(0,0,this.w,this.h);const p=this.player;ctx.fillStyle="rgba(0,0,0,.25)";ctx.beginPath();ctx.arc(p.x+2,p.y+2,p.r,0,Math.PI*2);ctx.fill();ctx.fillStyle="#60a5fa";ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.fillStyle="#374151";ctx.beginPath();ctx.arc(p.x+p.dir.x*(p.r+8),p.y+p.dir.y*(p.r+8),6,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ef4444";for(const b of this.bullets){ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();}
+  for(const e of this.enemies){
+    if(e.showHP){const w=24,h=5;ctx.fillStyle="#6b7280";ctx.fillRect(e.x-w/2,e.y-e.r-16,w,h);ctx.fillStyle="#ef4444";ctx.fillRect(e.x-w/2,e.y-e.r-16,w*(e.life/e.maxLife),h);}
+    ctx.fillStyle=e.color;
+    if(e.shape === 'pentagon') {
+      const sides = 5;
+      ctx.beginPath();
+      ctx.moveTo(e.x + e.r, e.y);
+      for (let i = 1; i <= sides; i++) {
+        const angle = (i / sides) * 2 * Math.PI;
+        ctx.lineTo(e.x + e.r * Math.cos(angle), e.y + e.r * Math.sin(angle));
+      }
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.arc(e.x,e.y,e.r,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+  for(const f of this.floaters){ctx.globalAlpha=Math.max(0,Math.min(1,f.life));ctx.fillStyle=f.color;ctx.font=`bold ${f.size}px Inter, system-ui`;ctx.textAlign="center";ctx.fillText(f.text,f.x,f.y);ctx.globalAlpha=1;}const s=this.player.derived();
+    
+    const orbR=69;
+    const orbPadding = 20;
+    const cx=orbPadding + orbR;
+    const cy=this.h - orbPadding - orbR;
+
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,orbR,0,Math.PI*2);ctx.shadowColor="rgba(0,0,0,.35)";ctx.shadowBlur=8;ctx.fillStyle="#991b1b";ctx.fill();ctx.beginPath();ctx.arc(cx,cy,orbR-4,0,Math.PI*2);ctx.fillStyle="#ef4444";ctx.fill();const lifePct=Math.max(0,Math.min(1,p.life/s.maxLife));if(lifePct<1){const missing=1-lifePct;const angle=missing*Math.PI*2;const start=-Math.PI/2-angle/2;const end=start+angle;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,orbR-4,start,end);ctx.closePath();ctx.fillStyle="#9ca3af";ctx.fill();}ctx.globalAlpha=.15;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(cx-12,cy-16,orbR*.6,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle="#fff";ctx.font="bold 12px Inter";ctx.textAlign="center";ctx.fillText(`Life ${fmt(p.life,0)}/${fmt(s.maxLife,0)}`,cx,cy+4);ctx.restore();document.getElementById("xpLabel").textContent=`Xp ${fmt(this.player.xp,0)}/${fmt(this.player.xpNext,0)}`;},
+loop(){if(this.state!=="arena")return;const t=now();const dt=Math.min(0.05,(t-this.lastTime)/1000);this.lastTime=t;if(!this.paused){this.update(dt);this.render();}requestAnimationFrame(()=>this.loop());}
+};
+
+/* UI */
+const UI={hoverStat:"",
+elements:{startBtn:document.getElementById("startBtn"),pauseBtn:document.getElementById("pauseBtn"),nextBtn:document.getElementById("nextPhase"),hudPhase:document.getElementById("hudPhase"),hudKill:document.getElementById("hudKill"),hudLevel:document.getElementById("hudLevel"),xpFill:document.getElementById("xpFill"),timerLabel:document.getElementById("timerLabel"),timerBox:document.getElementById("timerBox"),essA:document.getElementById("essCount"),essB:document.getElementById("essCountBuild"),lootGrid:document.getElementById("lootGrid"),invGrid:document.getElementById("invGrid"),statPanel:document.getElementById("statPanel"),levelModal:document.getElementById("levelModal"),levelOptions:document.getElementById("levelOptions"),sortStat:document.getElementById("sortStat"),sortTypeSel:document.getElementById("sortTypeSel"),dismSel:document.getElementById("dismSel"),dismAll:document.getElementById("dismAll"),clearSel:document.getElementById("clearSel"),upgradeBtn:document.getElementById("upgradeBtn"),confirmModal:document.getElementById("confirmModal"),confirmYes:document.getElementById("confirmYes"),confirmNo:document.getElementById("confirmNo")},
+populateSortOptions(){for(const k of STAT_KEYS){const o=document.createElement("option");o.value=k;o.textContent=k;this.elements.sortStat.appendChild(o);}for(const t of TYPE_KEYS){const o=document.createElement("option");o.value=t;o.textContent=`${({Gun:"🔫",Helmet:"👑",Chest:"🥻",Boots:"👞",Belt:"🩹",Ring:"💍"})[t]} ${t}`;this.elements.sortTypeSel.appendChild(o);}},
+setHoverStat(stat){this.hoverStat=stat||"";this.refreshHighlights();},
+refreshHighlights(){document.querySelectorAll(".ic-aff").forEach(el=>{el.classList.toggle("hl",el.dataset.stat===this.hoverStat&&this.hoverStat!=="");});},
+updateHUD(){this.elements.hudPhase.textContent=Game.player.phase;this.elements.hudKill.textContent=Game.player.kill;this.elements.hudLevel.textContent=Game.player.level;this.syncEssence();},
+updateXP(){const cur=Game.player.xp,need=Game.player.xpNext,pct=Math.max(0,Math.min(100,100*cur/need));this.elements.xpFill.style.width=pct+"%";},
+updateTimer(t){this.elements.timerLabel.textContent=`${fmt(t,2)}s`;this.elements.timerBox.classList.toggle("danger",t<=10.0);},
+syncEssence(){this.elements.essA.textContent=Game.player.essence;this.elements.essB.textContent=Game.player.essence;},
+renderStats(){const p=Game.player,s=p.derived(),panel=this.elements.statPanel;const lines=[`DPS: ${fmt(p.dps(),0)}`,`Damage: ${fmt(s.damage,2)}`,`Attack Speed: ${fmt(s.attackSpeed,2)}/s`,`Maximum Life: ${fmt(s.maxLife,0)}`,`Life Regen: ${fmt(s.lifeRegen,2)}/s`,`Armor: ${fmt(s.armor,0)}`,`Crit Chance: ${fmt(s.critChance,2)}%`,`Crit Damage: ${fmt(s.critDamage,0)}%`,`Move Speed: ${fmt(s.moveSpeed,0)}`,`Magic Find: ${fmt(s.magicFind,0)}%`];panel.innerHTML=lines.map(l=>`<div>${l}</div>`).join("");},
+renderLoot(){const wrap=this.elements.lootGrid;wrap.innerHTML="";const statKey=this.elements.sortStat.value,typeKey=this.elements.sortTypeSel.value;let arr=[...Game.player.loot];arr.sort((a,b)=>{if(a.locked&&!b.locked)return-1;if(b.locked&&!a.locked)return 1;if(a.selected&&!b.selected)return-1;if(b.selected&&!a.selected)return 1;if(typeKey){const at=a.type===typeKey?0:1,bt=b.type===typeKey?0:1;if(at!==bt)return at-bt;}if(statKey){const av=a.affixes.find(x=>x.stat===statKey)?.value??-Infinity,bv=b.affixes.find(x=>x.stat===statKey)?.value??-Infinity;if(bv!==av)return bv-av;}const rar=RAR_ORDER.indexOf(b.rarity)-RAR_ORDER.indexOf(a.rarity);if(rar!==0)return rar;if(a.type!==b.type)return a.type.localeCompare(b.type);return a.id.localeCompare(b.id);});for(const it of arr){wrap.appendChild(it.toHTML('loot'));}this.refreshHighlights();this.refreshUpgradeButton();},
+renderInventory(){const grid=this.elements.invGrid;grid.innerHTML="";const order=["Ring","Helmet","Gun","Belt","Chest","Boots"];for(const t of order){const slot=document.createElement("div");slot.className="slot";slot.dataset.type=t;const it=Game.player.inv[t];if(it){slot.appendChild(it.toHTML('inventory'));}else{const ph=document.createElement("div");ph.className="placeholder";ph.textContent=({Gun:"🔫",Helmet:"👑",Chest:"🥻",Boots:"👞",Belt:"🩹",Ring:"💍"})[t];slot.appendChild(ph);}grid.appendChild(slot);slot.addEventListener("dragover",e=>e.preventDefault());slot.addEventListener("drop",e=>{e.preventDefault();const data=JSON.parse(e.dataTransfer.getData("text/plain"));if(data.kind==="item"){const item=Game.player.loot.find(it=>it.id===data.id)||Object.values(Game.player.inv).find(it=>it&&it.id===data.id);if(!item||item.type!==t)return;const li=Game.player.loot.findIndex(x=>x.id===item.id);if(li>=0)Game.player.loot.splice(li,1);const prev=Game.player.inv[t];if(prev)Game.player.loot.unshift(prev);Game.player.inv[t]=item;UI.renderInventory();UI.renderLoot();UI.renderStats();}});}this.refreshHighlights();this.refreshUpgradeButton();},
+getSelectedItem(){const inLoot=Game.player.loot.find(i=>i.selected);if(inLoot)return inLoot;for(const k of Object.keys(Game.player.inv)){const it=Game.player.inv[k];if(it&&it.selected)return it;}return null;},
+refreshUpgradeButton(){const btn=this.elements.upgradeBtn;const it=this.getSelectedItem();if(!it){btn.textContent="Upgrade Selected";btn.disabled=true;return;}const cost=UPGRADE_COST[it.rarity];btn.textContent=`Upgrade Selected (${cost} Essence)`;btn.disabled=Game.player.essence<cost;},
+showLevelUp(){const list=this.elements.levelOptions;list.innerHTML="";this.elements.levelModal.classList.remove("hidden");for(const opt of LEVEL_UP_CHOICES){const b=document.createElement("button");b.className="btn";b.style.background="#111";b.style.color="#fff";b.style.borderRadius="10px";b.style.padding="12px";b.textContent=opt.label;b.onclick=()=>{opt.apply(Game.player);UI.renderStats();UI.updateHUD();UI.hideLevelUp();Game.pause(false);};list.appendChild(b);}},
+hideLevelUp(){this.elements.levelModal.classList.add("hidden");},
+};
+document.getElementById("startBtn").addEventListener("click",()=>Game.startArena());
+document.getElementById("pauseBtn").addEventListener("click",()=>Game.pause());
+document.getElementById("nextPhase").addEventListener("click",()=>Game.nextPhase());
+document.getElementById("upgradeBtn").addEventListener("click",()=>{const it=UI.getSelectedItem();if(!it){alert("Önce bir item seç.");return;}const cost=UPGRADE_COST[it.rarity];if(Game.player.essence<cost){alert("Yetersiz essence!");return;}Game.player.essence-=cost;it.upgrade();UI.renderLoot();UI.renderInventory();UI.renderStats();UI.syncEssence();});
+document.getElementById("dismSel").addEventListener("click",()=>{const keep=[];let gained=0;for(const it of Game.player.loot){if(it.selected&&!it.locked){gained+=it.essenceYield();}else keep.push(it);}Game.player.loot=keep;Game.player.essence+=gained;UI.renderLoot();UI.syncEssence();});
+/* confirm dismantle all */
+UI.elements.dismAll.addEventListener("click",()=>UI.elements.confirmModal.classList.remove("hidden"));
+UI.elements.confirmNo.addEventListener("click",()=>UI.elements.confirmModal.classList.add("hidden"));
+UI.elements.confirmYes.addEventListener("click",()=>{let gained=0;const keep=[];for(const it of Game.player.loot){if(it.locked)keep.push(it);else gained+=it.essenceYield();}Game.player.loot=keep;Game.player.essence+=gained;UI.renderLoot();UI.syncEssence();UI.elements.confirmModal.classList.add("hidden");});
+document.getElementById("clearSel").addEventListener("click",()=>{for(const it of Game.player.loot)it.selected=false;for(const k of Object.keys(Game.player.inv)){const it=Game.player.inv[k];if(it)it.selected=false;}UI.renderLoot();UI.renderInventory();});
+document.getElementById("sortStat").addEventListener("change",()=>UI.renderLoot());
+document.getElementById("sortTypeSel").addEventListener("change",()=>UI.renderLoot());
+window.addEventListener("load",()=>{Game.init();});
+</script>
+</body>
+</html>
