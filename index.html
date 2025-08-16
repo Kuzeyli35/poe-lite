@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diablo/PoE Lite - v5</title>
+<title>Diablo Lite v0.9</title>
 <style>
   :root{
     --bg:#7a7d82; --panel:#d6d7da; --ink:#222; --chip:#4b4d52; --chipInk:#eee;
@@ -30,8 +30,58 @@
     box-shadow:0 2px 0 rgba(0,0,0,.25), inset 0 -2px 0 rgba(0,0,0,.25);
   }
   .hidden{display:none !important;}
-  /* start */
-  #startScreen{height:100vh;display:grid;place-items:center;}
+  
+  /* start screen */
+  #startScreen{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .start-content {
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 20px 40px;
+    margin-bottom: 40px;
+    max-width: 800px;
+    box-shadow: 0 8px 0 rgba(0,0,0,.25), inset 0 0 0 2px #b2b2b2;
+  }
+  .start-content h2 {
+    font-size: 2em;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-shadow: 0 2px #fff;
+  }
+  .start-content p {
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-align: left;
+  }
+  .controls-grid {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    text-align: left;
+  }
+  .controls-grid h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #bbb;
+    padding-bottom: 5px;
+  }
+  .controls-grid p {
+    margin: 0 0 8px;
+    font-size: 14px;
+  }
+
+  #startBtn {
+    padding: 20px 60px;
+    font-size: 2.5em;
+    border-radius: 20px;
+  }
+
   /* arena */
   #arenaScreen{padding:18px; height: 100%;}
   .topbar{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-bottom:6px; max-width:1476px; margin: 0 auto 6px;}
@@ -92,7 +142,7 @@
     grid-template-columns:1.5fr 1fr;
     grid-template-rows: minmax(0, 1fr); 
     gap:12px;
-    max-width:1300px; /* Adjusted for wider cards */
+    max-width:1300px;
     margin:0 auto;
     width:100%;
     height:100%;
@@ -197,6 +247,31 @@
 </head>
 <body>
   <section id="startScreen">
+    <div class="start-content">
+        <h2>Oyun Hakkında</h2>
+        <p>
+            Diablo/PoE Lite'a hoş geldin! Bu, hayatta kalma ve eşya toplama (loot) odaklı, hızlı tempolu bir arena savaş oyunudur. Amacın, giderek zorlaşan düşman dalgalarına (Wave) karşı ayakta kalmaktır.
+        </p>
+        <p>
+            Her dalganın sonunda yeni ve daha güçlü eşyalar kazanacak, karakterini bu eşyalarla geliştirerek bir sonraki, daha çetin mücadeleye hazırlanacaksın. En iyi eşyaları topla, en güçlü karakteri yarat ve arenaların hakimi ol!
+        </p>
+        <div class="controls-grid">
+            <div>
+                <h3>Arena Kontrolleri</h3>
+                <p><b>W, A, S, D:</b> Karakteri hareket ettirir.</p>
+                <p><b>Fare Hareketi:</b> Nişan almanı sağlar.</p>
+                <p><b>Farenin Sol Tuşu:</b> Ateş eder.</p>
+                <p><b>Duraklat Butonu:</b> Oyunu durdurur/devam ettirir.</p>
+            </div>
+            <div>
+                <h3>Build Ekranı Kontrolleri</h3>
+                <p><b>Eşyaya Tıklama:</b> Seçer veya seçimini kaldırır.</p>
+                <p><b>Sürükle & Bırak:</b> Eşyayı envantere kuşanır.</p>
+                <p><b>Kilit Simgesi:</b> Eşyayı parçalanmaya karşı kilitler.</p>
+                <p><b>Upgrade/Dismantle:</b> Butonları kullanır.</p>
+            </div>
+        </div>
+    </div>
     <button class="btn" id="startBtn">Start</button>
   </section>
 
