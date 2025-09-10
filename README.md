@@ -1,2 +1,2 @@
-# diablo-lite
-Simple diablo-like web game.
+# poe-lite
+Simple poe-like web game.
