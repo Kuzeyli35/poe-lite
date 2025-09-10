@@ -1,0 +1,2115 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diablo Lite v0.15</title>
+    <style>
+        :root {
+            --bg: #7a7d82;
+            --panel: #d6d7da;
+            --ink: #222;
+            --chip: #4b4d52;
+            --chipInk: #eee;
+            --blue: #3b82f6;
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #fbbf24;
+            --uniq: #f87171;
+            --mag: #60a5fa;
+            --norm: #9ca3af;
+            --card-w: 180px;
+            --card-h: 240px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial
+        }
+
+        html,
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #111;
+            text-align: center;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            overflow-y: auto;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-weight: 700;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, .25)
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            filter: grayscale(80%);
+            opacity: 0.7;
+        }
+
+        .btn {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, .25), inset 0 -2px 0 rgba(0, 0, 0, .25);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* arena */
+        #arenaScreen {
+            padding: 18px;
+            height: 100%;
+            position: relative;
+        }
+
+        .topbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 6px;
+            max-width: 1476px;
+            margin: 0 auto 6px;
+        }
+
+        .chip {
+            background: var(--chip);
+            color: var(--chipInk);
+            padding: 6px 12px;
+            border-radius: 16px;
+            box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .15);
+            font-weight: 800;
+            font-size: 14px;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+        }
+
+        .essence {
+            font-weight: 900;
+            padding: 6px 10px;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #bbb
+        }
+
+        .arenaFrame {
+            background: var(--panel);
+            border-radius: 8px;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, .25), inset 0 0 0 2px #999;
+            padding: 8px;
+            position: relative;
+            display: inline-block;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+            border-radius: 4px;
+            box-shadow: inset 0 0 0 2px #aaa;
+            position: relative;
+            z-index: 2;
+        }
+
+        .timerBox {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 8px;
+            background: #666;
+            color: #fff;
+            padding: 8px 10px;
+            border-radius: 10px;
+            box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25);
+            font-size: 16px;
+            font-weight: 900
+        }
+
+        .timerBox.danger {
+            background: #b91c1c;
+            animation: pulse 1s infinite
+        }
+
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(1) }
+            50% { transform: translateX(-50%) scale(1.08) }
+            100% { transform: translateX(-50%) scale(1) }
+        }
+
+        .pauseBadge {
+            position: absolute;
+            right: 14px;
+            top: 6px;
+            background: #111;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 8px;
+            opacity: .8;
+            display: none
+        }
+
+        .paused .pauseBadge {
+            display: block
+        }
+
+        .chipRow {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -36px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center
+        }
+
+        .xpBar {
+            position: absolute;
+            left: 200px;
+            right: 200px;
+            bottom: 12px;
+            height: 22px;
+            border-radius: 12px;
+            background: #444;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .35);
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .xpFill {
+            height: 100%;
+            background: var(--green);
+            width: 0%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 1
+        }
+
+        .xpBar span {
+            position: relative;
+            z-index: 2
+        }
+        
+        #buffContainer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
+        
+        #minimap {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            height: 120px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            opacity: 0.7;
+            z-index: 10;
+        }
+
+        .buff-icon {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 16px;
+            border: 2px solid #ffc107;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+        }
+
+        .cooldown-icon {
+            opacity: 0.4;
+            filter: grayscale(100%);
+        }
+
+        /* build screen layout */
+        #buildScreen {
+            text-align: left;
+            padding: 12px;
+            height: 100%;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            grid-template-rows: minmax(0, 1fr);
+            gap: 12px;
+            max-width: 1300px;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+        }
+
+        .grid>.panel:first-child {
+            display: flex;
+            flex-direction: column;
+            min-width: calc(4 * var(--card-w) + 3 * 10px + 16px);
+            overflow: hidden;
+        }
+
+        .panel {
+            background: #eee8;
+            border-radius: 18px;
+            box-shadow: 0 8px 0 rgba(0, 0, 0, .25), inset 0 0 0 2px #b2b2b2
+        }
+
+        .panel h2 {
+            margin: 0;
+            padding: 10px 14px;
+            background: linear-gradient(#e5e7eb, #d1d5db);
+            border-radius: 18px 18px 0 0;
+            font-size: 22px;
+            text-shadow: 0 2px #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lootControls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+        }
+
+        .lootControls .essence {
+            margin-left: auto;
+            font-size: 14px;
+            padding: 4px 8px;
+        }
+
+        .lootControls button.pill {
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .lootWrap {
+            overflow-y: auto;
+            padding: 8px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .lootWrap::-webkit-scrollbar { width: 8px; }
+        .lootWrap::-webkit-scrollbar-track { background: #00000022; border-radius: 4px; }
+        .lootWrap::-webkit-scrollbar-thumb { background: var(--chip); border-radius: 4px; }
+        .lootWrap::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .lootGrid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            align-content: start;
+        }
+
+        .inv {
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, var(--card-w));
+            gap: 10px;
+            align-content: start;
+            justify-content: center
+        }
+
+        .slot {
+            background: #d1d5db;
+            border-radius: 14px;
+            padding: 0;
+            width: var(--card-w);
+            height: var(--card-h);
+            position: relative;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            border: 2px dashed #a3a3a3
+        }
+
+        .slot .placeholder {
+            font-size: 24px;
+            opacity: .5
+        }
+
+        .rightCol {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 12px;
+        }
+
+        .asideBtns {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 0 12px
+        }
+
+        .nextWaveButtons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .next {
+            flex: 1;
+            padding: 14px 12px;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 8px 0 rgba(0, 0, 0, .25);
+            font-weight: 900
+        }
+
+        .next.btn-primary {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .sortWrap {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 0px 12px 8px 12px;
+        }
+
+        select,
+        #sortLevel {
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid #bbb;
+            background: #fff;
+            font-weight: 700
+        }
+
+        #sortLevel {
+            width: 70px;
+        }
+
+        .ghost {
+            opacity: .5
+        }
+
+        /* card */
+        .icard {
+            width: var(--card-w);
+            height: var(--card-h);
+            border-radius: 16px;
+            background: #444;
+            color: #fff;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, .25);
+            position: relative;
+            user-select: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column
+        }
+
+        .icard .ic-top {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 16px 16px 0 0;
+            gap: 4px;
+        }
+
+        .icard .ic-type {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .icard .ic-level {
+            font-family: Inter, sans-serif;
+            font-size: 11px;
+            font-weight: 900;
+            background: var(--chip);
+            color: var(--chipInk);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .icard .ic-rar {
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #222;
+            color: #fff;
+            font-size: 12px;
+            box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .35);
+        }
+
+        .icard .ic-lock {
+            background: transparent;
+            box-shadow: none;
+            font-size: 18px;
+            padding: 0 2px;
+        }
+
+        .icard .ic-name {
+            font-weight: 900;
+            text-align: center;
+            padding: 8px 10px 4px;
+            line-height: 1.1;
+            font-size: 15px;
+            word-wrap: break-word;
+        }
+
+        .icard .ic-sep {
+            height: 2px;
+            background: #fff6;
+            margin: 6px 10px 4px;
+            border-radius: 1px
+        }
+
+        .icard .ic-aff {
+            font-size: 12px;
+            line-height: 1.25;
+            padding: 1px 10px;
+            border-radius: 8px
+        }
+
+        .icard .ic-aff .val {
+            font-weight: 900
+        }
+
+        .icard .ic-foot {
+            margin-top: auto;
+            height: 6px;
+            background: #0002
+        }
+
+        .icard.locked { outline: 3px solid #fa1616; }
+        .icard.sel { outline: 3px solid #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .35) inset, 0 6px 0 rgba(0, 0, 0, .25) }
+        .rarN { background: #3b3b40 }
+        .rarM { background: #1f3d69 }
+        .rarR { background: #6b5700 }
+        .rarU { background: #6b1f1f }
+        .rarN .ic-top { background: var(--norm); color: #222 }
+        .rarM .ic-top { background: var(--mag) }
+        .rarR .ic-top { background: var(--yellow); color: #222 }
+        .rarU .ic-top { background: var(--uniq) }
+        .icard .ic-aff.hl { background: #6fb6ff; color: #fff; box-shadow: 0 0 0 2px #dff1ff inset }
+        .icard .ic-unique-aff {
+            background: var(--uniq);
+            color: #fff;
+            font-weight: 700;
+            font-size: 11px;
+            line-height: 1.3;
+            padding: 6px 10px;
+            margin: 8px 10px 4px;
+            border-radius: 8px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+        }
+        
+        /* modals */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50
+        }
+
+        .modal>div {
+            background: #fff;
+            border-radius: 14px;
+            min-width: min(92vw, 560px);
+            padding: 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, .35)
+        }
+
+        /* stats list */
+        .statList {
+            padding: 10px 14px 14px;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size: 14px
+        }
+
+        .statList div { line-height: 1.4 }
+
+        /* Notifications */
+        #notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .notification {
+            background: var(--red);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateX(100%);
+            animation: slideInAndOut 4s ease-in-out;
+        }
+
+        @keyframes slideInAndOut {
+            0% { opacity: 0; transform: translateX(100%); }
+            10% { opacity: 1; transform: translateX(0); }
+            90% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(100%); }
+        }
+    </style>
+</head>
+
+<body>
+    <section id="startScreen">
+        <div class="start-content">
+            <h2>Oyun Hakkında</h2>
+            <p>
+                Diablo/PoE Lite'a hoş geldin! Bu, hayatta kalma ve eşya toplama (loot) odaklı, hızlı tempolu bir arena savaş oyunudur. Amacın, giderek zorlaşan düşman dalgalarına (Wave) karşı ayakta kalmaktır.
+            </p>
+            <p>
+                Her dalganın sonunda yeni ve daha güçlü eşyalar kazanacak, karakterini bu eşyalarla geliştirerek bir sonraki, daha çetin mücadeleye hazırlanacaksın. En iyi eşyaları topla, en güçlü karakteri yarat ve arenaların hakimi ol!
+            </p>
+            <div class="controls-grid">
+                <div>
+                    <h3>Arena Kontrolleri</h3>
+                    <p><b>W, A, S, D:</b> Karakteri hareket ettirir.</p>
+                    <p><b>Fare Hareketi:</b> Nişan almanı sağlar.</p>
+                    <p><b>Farenin Sol Tuşu:</b> Ateş eder.</p>
+                    <p><b>Boşluk (Space):</b> Işınlanma (Blink Boots varsa)</p>
+                </div>
+                <div>
+                    <h3>Build Ekranı Kontrolleri</h3>
+                    <p><b>Eşyaya Tıklama:</b> Seçer veya seçimini kaldırır.</p>
+                    <p><b>Sürükle & Bırak:</b> Eşyayı envantere kuşanır.</p>
+                    <p><b>Kilit Simgesi:</b> Eşyayı parçalanmaya karşı kilitler.</p>
+                    <p><b>Upgrade/Dismantle:</b> Butonları kullanır.</p>
+                </div>
+            </div>
+        </div>
+        <button class="btn" id="startBtn">Start</button>
+    </section>
+
+    <section id="arenaScreen" class="hidden">
+        <div class="topbar">
+            <div class="essence">Essence: <span id="essCount">0</span></div>
+            <button id="pauseBtn" class="btn">Duraklat</button>
+        </div>
+        <div class="arenaFrame" id="arenaFrame">
+            <div class="chipRow">
+                <div class="chip">Wave: <span id="hudWave">1</span></div>
+                <div class="chip">Kills: <span id="hudKill">0</span></div>
+                <div class="chip">Total Kills: <span id="hudTotalKill">0</span></div>
+                <div class="chip">Level: <span id="hudLevel">1</span></div>
+            </div>
+            <div class="timerBox" id="timerBox"><span id="timerLabel">45.00s</span></div>
+            <div class="pauseBadge">PAUSED</div>
+            <canvas id="game" width="1476" height="846"></canvas>
+            <div class="xpBar">
+                <div class="xpFill" id="xpFill"></div><span id="xpLabel"></span>
+            </div>
+            <div id="buffContainer" class="hidden"></div>
+            <canvas id="minimap"></canvas>
+        </div>
+    </section>
+
+    <section id="buildScreen" class="hidden">
+        <div class="grid">
+            <div class="panel">
+                <h2>Loot</h2>
+                <div class="lootControls">
+                    <button class="pill" id="dismSel">Dismantle Selected</button>
+                    <button class="pill" id="clearSel">Clear Selection</button>
+                    <button class="pill btn-danger" id="dismAll">Dismantle All</button>
+                    <div class="essence">Essence: <span id="essCountBuild">0</span></div>
+                    <button class="pill" id="debugItemBtn" style="background-color:#8b5cf6;">+1 Unique Item (T1)</button>
+                </div>
+                <div class="sortWrap">
+                    <strong>Sort</strong>
+                    <label>By Type <select id="sortTypeSel"><option value="">All</option></select></label>
+                    <label>By Stat <select id="sortStat"><option value="">-</option></select></label>
+                    <label>By Level <input type="number" id="sortLevel" placeholder="Lvl"></label>
+                </div>
+                <div class="lootWrap">
+                    <div class="lootGrid" id="lootGrid"></div>
+                </div>
+            </div>
+            <div class="rightCol">
+                <div class="panel">
+                    <h2>Inventory <span class="chip" style="font-size:12px;">Player Level: <span id="buildPlayerLevel">1</span></span></h2>
+                    <div class="inv" id="invGrid"></div>
+                    <div class="asideBtns">
+                        <button id="upgradeBtn" class="btn">Upgrade Selected</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>Stats</h2>
+                    <div class="statList" id="statPanel"></div>
+                </div>
+                <div class="nextWaveButtons">
+                    <button class="next" id="sameWave">Same Wave</button>
+                    <button class="next btn-primary" id="nextWave">Next Wave</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal hidden" id="levelModal">
+        <div>
+            <h3 style="margin:0 0 10px">Seviye atladın! Bir stat seç (Magic Find hariç)</h3>
+            <div class="options" id="levelOptions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="confirmModal">
+        <div style="text-align:center">
+            <h3 style="margin-top:0">Dismantle all unlocked items?</h3>
+            <p>This cannot be undone.</p>
+            <div style="display:flex;gap:10px;justify-content:center">
+                <button id="confirmYes" class="btn">✔️ Yes</button>
+                <button id="confirmNo" class="btn">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script>
+        /* Helpers */
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+        const rand = (a, b) => Math.random() * (b - a) + a;
+        const randi = (a, b) => Math.floor(rand(a, b + 1));
+        const choice = a => a[Math.floor(Math.random() * a.length)];
+        const now = () => performance.now();
+        const fmt = (n, d = 2) => Number.parseFloat(n).toFixed(d);
+        let itemUIDCounter = 0;
+        const uid = () => `item-${itemUIDCounter++}`;
+
+        function weightedChoice(options) {
+            let totalWeight = options.reduce((sum, opt) => sum + opt.weight, 0);
+            if (totalWeight <= 0) {
+                return choice(options.map(opt => opt.value));
+            }
+            let random = Math.random() * totalWeight;
+            for (const opt of options) {
+                if (random < opt.weight) return opt.value;
+                random -= opt.weight;
+            }
+            return options[options.length - 1].value;
+        }
+
+        /* Constants */
+        const STAT_KEYS = ["Damage", "Damage %", "Attack Speed", "Maximum Life", "Life Regen", "Armor", "Crit Chance", "Crit Damage", "Move Speed", "Magic Find"];
+        const TYPE_KEYS = ["Gun", "Helmet", "Chest", "Boots", "Belt", "Ring"];
+        const TYPE_EMOJI = { Gun: "🔫", Helmet: "👑", Chest: "🥻", Boots: "👞", Belt: "🩹", Ring: "💍" };
+        const LOCK_EMOJI = { lock: "🔐", unlock: "🔓" };
+        const RAR = { N: "NORMAL", M: "MAGICAL", R: "RARE", U: "UNIQUE" };
+        const RAR_ORDER = ["N", "M", "R", "U"];
+        const RAR_AFFIX = { N: 2, M: 3, R: 4, U: 5 };
+        const RAR_ESSENCE = { N: 1, M: 3, R: 10, U: 30 };
+        const UPGRADE_COST = { N: 3, M: 10, R: 30, U: 30 };
+        const T_TIERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        const AFFIX_RANGES = {
+            "Damage": { T1: [20, 25], T2: [17, 20], T3: [14, 17], T4: [12, 14], T5: [10, 12], T6: [8, 10], T7: [6, 8], T8: [4, 6], T9: [2, 4], T10: [1, 2], unit: "flat" },
+            "Damage %": { T1: [18, 22], T2: [15, 18], T3: [12, 15], T4: [10, 12], T5: [8, 10], T6: [6, 8], T7: [4, 6], T8: [3, 4], T9: [2, 3], T10: [1, 2], unit: "pct" },
+            "Attack Speed": { T1: [28, 35], T2: [24, 28], T3: [20, 24], T4: [17, 20], T5: [14, 17], T6: [11, 14], T7: [8, 11], T8: [5, 8], T9: [3, 5], T10: [1, 3], unit: "pct" },
+            "Maximum Life": { T1: [35, 45], T2: [30, 35], T3: [25, 30], T4: [21, 25], T5: [17, 21], T6: [13, 17], T7: [9, 13], T8: [6, 9], T9: [4, 6], T10: [2, 4], unit: "flat" },
+            "Life Regen": { T1: [2.0, 2.8], T2: [1.6, 2.0], T3: [1.2, 1.6], T4: [0.9, 1.2], T5: [0.6, 0.9], T6: [0.4, 0.6], T7: [0.3, 0.4], T8: [0.2, 0.3], T9: [0.1, 0.2], T10: [0.1, 0.1], unit: "flat" },
+            "Armor": { T1: [20, 28], T2: [17, 20], T3: [14, 17], T4: [11, 14], T5: [8, 11], T6: [6, 8], T7: [4, 6], T8: [3, 4], T9: [2, 3], T10: [1, 2], unit: "flat" },
+            "Crit Chance": { T1: [8, 10], T2: [7, 8], T3: [6, 7], T4: [5, 6], T5: [4, 5], T6: [3, 4], T7: [2.5, 3], T8: [2, 2.5], T9: [1, 2], T10: [0.5, 1], unit: "pct" },
+            "Crit Damage": { T1: [70, 85], T2: [60, 70], T3: [50, 60], T4: [40, 50], T5: [30, 40], T6: [22, 30], T7: [15, 22], T8: [10, 15], T9: [6, 10], T10: [3, 6], unit: "pct" },
+            "Move Speed": { T1: [15, 20], T2: [12, 15], T3: [10, 12], T4: [8, 10], T5: [6, 8], T6: [5, 6], T7: [4, 5], T8: [3, 4], T9: [2, 3], T10: [1, 2], unit: "pct" },
+            "Magic Find": { T1: [25, 35], T2: [20, 25], T3: [16, 20], T4: [13, 16], T5: [10, 13], T6: [8, 10], T7: [6, 8], T8: [4, 6], T9: [2, 4], T10: [1, 2], unit: "pct" },
+        };
+        const LEVEL_UP_CHOICES = [{
+            k: "Damage", apply: p => { p.base.damage += 2 }, label: "+2 Damage"
+        }, {
+            k: "Attack Speed", apply: p => { p.base.attackSpeed *= 1.05 }, label: "+%5 Attack Speed"
+        }, {
+            k: "Maximum Life", apply: p => { p.base.maxLife += 5; p.life = Math.min(p.life + 5, p.base.maxLife) }, label: "+5 Maximum Life"
+        }, {
+            k: "Life Regen", apply: p => { p.base.lifeRegen += 0.5 }, label: "+0.5 Life Regen"
+        }, {
+            k: "Armor", apply: p => { p.base.armor += 2 }, label: "+2 Armor"
+        }, {
+            k: "Crit Chance", apply: p => { p.base.critChance += 1 }, label: "+1% Crit Chance"
+        }, {
+            k: "Crit Damage", apply: p => { p.base.critDamage += 10 }, label: "+10% Crit Damage"
+        }, {
+            k: "Move Speed", apply: p => { p.base.moveSpeed *= 1.03 }, label: "+%3 Move Speed"
+        }, ];
+        const LEVEL_XP_MULTIPLIER = 1.4; // Sonraki seviye için gereken XP'nin artış oranı (%40)
+        const WAVE_XP_MULTIPLIER = 0.25; // Her dalgada düşman XP'sinin artış oranı (%25)
+        const WAVE_SCALE = wave => ({
+            hpMul: 1 + 0.15 * (wave - 1), dmgMul: 1 + 0.12 * (wave - 1),
+            spdMul: 1 + 0.04 * (wave - 1), spawnMul: 1 + 0.06 * (wave - 1)
+        });
+        const BASE_DROP = 0.03;
+        const MAGIC_CHANCE_BASE = 0.08;
+        const MAGIC_CHANCE_WAVE_SCALE = 0.0025;
+        const RARE_CHANCE_BASE = 0.01;
+        const RARE_CHANCE_WAVE_SCALE = 0.0015;
+        const PACK_STRUCTURES = {
+            Normal: [
+                { size: 2, weight: 40 }, // En yaygın
+                { size: 3, weight: 30 },
+                { size: 4, weight: 15 },
+                { size: 5, weight: 8 },
+                { size: 6, weight: 4 },
+                { size: 7, weight: 2 },
+                { size: 8, weight: 1 }  // En nadir
+            ],
+            Magic: [
+                { size: 2, weight: 60 }, // En yaygın
+                { size: 3, weight: 30 },
+                { size: 4, weight: 10 } // En nadir
+            ],
+            Rare: [
+                { size: 1, weight: 85 }, // En yaygın (tekli Rare)
+                { size: 2, weight: 15 }  // Çok nadir (ikili Rare pack)
+            ]
+        };
+        const UNIQUE_ITEMS = {
+            Gun: [{
+                name: "Apocalypse Carrier", uniqueId: "UNIQUE_GUN_SHOTGUN",
+                affixes: [{ stat: "Damage %", T1: [25, 30], T10: [5, 8] }, { stat: "Crit Chance", T1: [8, 10], T10: [1, 2] }, ],
+                uniqueProps: { bulletCount: 5, spreadAngle: 25, damageModifier: { T1: 0.50, T10: 0.35 } }
+            }, {
+                name: "Soul Piercer", uniqueId: "UNIQUE_GUN_PIERCE",
+                affixes: [{ stat: "Crit Damage", T1: [70, 85], T10: [15, 25] }, { stat: "Damage", T1: [20, 25], T10: [4, 8] }, ],
+                uniqueProps: {
+                    pierce: true,
+                    attackSpeedModifier: { T1: -0.15, T10: -0.30 },
+                    bulletSpeedMultiplier: 1.75, // %75 daha hızlı
+                    bulletRangeMultiplier: 2.5  // %150 daha uzun menzil
+                }
+            }],
+            Helmet: [{
+                name: "Headpiece of Frenzy", uniqueId: "UNIQUE_HELMET_FRENZY",
+                affixes: [{ stat: "Move Speed", T1: [15, 20], T10: [3, 5] }, { stat: "Armor", T1: [20, 25], T10: [5, 8] }, ],
+                uniqueProps: { maxStacks: 4, duration: 2.0, moveSpeedPerStack: { T1: 0.10, T10: 0.01 } }
+            }, {
+                name: "Crown of the Fountain of Life", uniqueId: "UNIQUE_HELMET_LIFE_FOUNTAIN",
+                affixes: [{ stat: "Maximum Life", T1: [35, 45], T10: [8, 12] }, { stat: "Life Regen", T1: [2.5, 3.5], T10: [0.5, 0.8] }, ],
+                uniqueProps: { armorReduction: 0.20, lifeRegenMultiplier: { T1: 10, T10: 2 } }
+            }],
+            Chest: [{
+                name: "Platemail of the Guardian", uniqueId: "UNIQUE_CHEST_GUARDIAN",
+                affixes: [{ stat: "Armor", T1: [30, 40], T10: [10, 15] }, { stat: "Maximum Life", T1: [30, 40], T10: [10, 15] }, ],
+                uniqueProps: { threshold: 0.20, damageReduction: { T1: 0.50, T10: 0.30 }, duration: { T1: 6, T10: 2 }, cooldown: { T1: 3, T10: 10 } }
+            }, {
+                name: "Thornmail", uniqueId: "UNIQUE_CHEST_THORNS",
+                affixes: [{ stat: "Armor", T1: [25, 30], T10: [8, 12] }, { stat: "Life Regen", T1: [1.5, 2.0], T10: [0.3, 0.5] }, ],
+                uniqueProps: { reflectPercentage: { T1: 0.50, T10: 0.05 } }
+            }],
+            Boots: [{
+                name: "Storm Runners", uniqueId: "UNIQUE_BOOTS_ICETRAIL",
+                affixes: [{ stat: "Move Speed", T1: [25, 30], T10: [8, 12] }, { stat: "Attack Speed", T1: [10, 15], T10: [2, 4] }, ],
+                uniqueProps: { duration: { T1: 3, T10: 1.5 }, slowPercentage: { T1: 0.60, T10: 0.30 } }
+            }, {
+                name: "Blink Boots", uniqueId: "UNIQUE_BOOTS_BLINK",
+                affixes: [{ stat: "Move Speed", T1: [20, 25], T10: [5, 8] }, { stat: "Magic Find", T1: [20, 25], T10: [5, 8] }, ],
+                uniqueProps: { distance: 300, cooldown: { T1: 3.5, T10: 15 } }
+            }],
+            Belt: [{
+                name: "Juggernaut's Clasp", uniqueId: "UNIQUE_BELT_JUGGERNAUT",
+                affixes: [{ stat: "Maximum Life", T1: [40, 50], T10: [10, 15] }, { stat: "Armor", T1: [25, 30], T10: [8, 12] }, ],
+                uniqueProps: { maxStacks: 10, interval: 2.0, armorPerStack: { T1: 0.05, T10: 0.015 }, regenPerStack: { T1: 1, T10: 0.2 } }
+            }, {
+                name: "Sash of a Thousand Stings", uniqueId: "UNIQUE_BELT_NOVABLAST",
+                affixes: [{ stat: "Attack Speed", T1: [12, 18], T10: [3, 5] }, { stat: "Damage", T1: [15, 20], T10: [3, 6] }, ],
+                uniqueProps: { hitsRequired: 5, projectileCount: 10, resetTime: 3.0, damageMultiplier: { T1: 1.0, T10: 0.25 } }
+            }],
+            Ring: [{
+                name: "Band of Greed",
+                uniqueId: "UNIQUE_RING_GREED",
+                affixes: [{
+                    stat: "Magic Find",
+                    T1: [30, 40],
+                    T10: [10, 15]
+                }, {
+                    stat: "Move Speed",
+                    T1: [8, 10],
+                    T10: [2, 3]
+                }, ],
+                uniqueProps: {
+                    duration: { T1: 10, T10: 4 },
+                    magicFindBonus: { T1: 2.00, T10: 0.50 } // +%200 ve +%50
+                }
+            }, {
+                name: "Seal of Criticality",
+                uniqueId: "UNIQUE_RING_CRITICALITY",
+                affixes: [{
+                    stat: "Crit Damage",
+                    T1: [80, 100],
+                    T10: [20, 30]
+                }, {
+                    stat: "Crit Chance",
+                    T1: [15, 24],
+                    T10: [3, 6]
+                }, ],
+                uniqueProps: {
+                    critMultiplier: 1.5, // %50 daha fazla kritik hasar
+                    nonCritPenalty: { T1: 0.90, T10: 0.60 } // %10-%40 daha az hasar
+                }
+            }]
+        };
+        const interpolateByTier = (tier, t1Value, t10Value) => {
+            return t10Value + (t1Value - t10Value) * ((10 - (tier - 1)) / 9);
+        };
+        const UNIQUE_DESCRIPTIONS = {
+            'UNIQUE_GUN_SHOTGUN': (props) => `Mermiler 5'e ayrılır. Her biri normal hasarın %${(props.damageModifier.value * 100).toFixed(0)} kadarını verir (T${props.damageModifier.tier}).`,
+            'UNIQUE_GUN_PIERCE': (props) => `Mermiler düşmanların içinden geçer, %75 daha hızlı uçar ve menzilleri %150 daha fazladır. %${(Math.abs(props.attackSpeedModifier.value) * 100).toFixed(0)} daha az Saldırı Hızı (T${props.attackSpeedModifier.tier}).`,
+            'UNIQUE_HELMET_FRENZY': (props) => `Öldürme başına 2s için +%${(props.moveSpeedPerStack.value * 100).toFixed(0)} Hareket Hızı kazandırır (En fazla 4 yük) (T${props.moveSpeedPerStack.tier}).`,
+            'UNIQUE_HELMET_LIFE_FOUNTAIN': (props) => `Can Yenilenmeni ${props.lifeRegenMultiplier.value.toFixed(1)} kat artırır (T${props.lifeRegenMultiplier.tier}), ancak Zırhını %20 azaltır.`,
+            'UNIQUE_CHEST_GUARDIAN': (props) => `Büyük darbede ${props.duration.value.toFixed(1)}s için %${(props.damageReduction.value*100).toFixed(0)} koruma (T${props.duration.tier}). Bekleme Süresi: ${props.cooldown.value.toFixed(1)}s (T${props.cooldown.tier}).`,
+            'UNIQUE_CHEST_THORNS': (props) => `Yakın dövüş hasarının %${(props.reflectPercentage.value*100).toFixed(0)} kadarını düşmana yansıtır (T${props.reflectPercentage.tier}).`,
+            'UNIQUE_BOOTS_ICETRAIL': (props) => `Hareket ederken arkanda ${props.duration.value.toFixed(1)}s kalan ve düşmanları %${(props.slowPercentage.value*100).toFixed(0)} yavaşlatan bir buz izi bırakırsın (T${props.duration.tier}).`,
+            'UNIQUE_BOOTS_BLINK': (props) => `İmlece doğru ışınlanmanı sağlayan bir yetenek kazanırsın. Bekleme Süresi: ${props.cooldown.value.toFixed(1)}s (T${props.cooldown.tier}).`,
+            'UNIQUE_BELT_JUGGERNAUT': (props) => `2s hareketsiz kalınca 1 "Juggernaut" yükü kazanırsın (maks 10). Her yük +%${(props.armorPerStack.value*100).toFixed(1)} Zırh (T${props.armorPerStack.tier}) ve +${props.regenPerStack.value.toFixed(1)} Can Yenilemesi (T${props.regenPerStack.tier}) verir. Hareket edince tüm yükler sıfırlanır.`,
+            'UNIQUE_BELT_NOVABLAST': (props) => `Her 5. isabetin (3s içinde) "Nova Blast" tetikler ve etrafa 10 mermi yollar. Mermiler silah hasarının %${(props.damageMultiplier.value*100).toFixed(0)} kadarını verir (T${props.damageMultiplier.tier}).`,
+            'UNIQUE_RING_GREED': (props) => `Nadir bir düşman öldürdüğünde ${props.duration.value.toFixed(1)}s (T${props.duration.tier}) için +%${(props.magicFindBonus.value*100).toFixed(0)} Magic Find (T${props.magicFindBonus.tier}) kazanırsın.`,
+            'UNIQUE_RING_CRITICALITY': (props) => `Kritik vuruşların %50 daha fazla hasar verir, ancak kritik olmayan vuruşların %${((1-props.nonCritPenalty.value)*100).toFixed(0)} daha az hasar verir (T${props.nonCritPenalty.tier}).`
+        };
+
+        /* Item */
+        class Item {
+            constructor({ type, rarity, name, affixes, id, ilvl }) {
+                this.id = id || uid();
+                this.type = type; this.rarity = rarity; this.ilvl = ilvl;
+                this.uniqueId = null; this.uniqueProps = null;
+                this.affixes = affixes || Item.rollAffixes.call(this, rarity, ilvl, type);
+                this.name = name || (this.name ? this.name : ItemNameGen.random(type, rarity));
+                this.locked = false; this.selected = false;
+            }
+            static getWeightedTiers(ilvl) {
+                return T_TIERS.map(tier => {
+                    const targetTier = clamp(11 - Math.floor(ilvl / 9), 1, 10);
+                    const distance = Math.abs(targetTier - tier);
+                    const weight = 1 / Math.pow(distance + 1.5, 3);
+                    return { value: tier, weight: weight };
+                });
+            }
+            static rollAffixes(r, ilvl = 1, type = null) {
+                const forceT1 = (ilvl === -1);
+                const weights = Item.getWeightedTiers(forceT1 ? 1 : ilvl);
+                if (r === 'U' && type && UNIQUE_ITEMS[type]) {
+                    const uniquePool = UNIQUE_ITEMS[type];
+                    const chosenUnique = choice(uniquePool);
+                    const aff = [];
+                    for (const uniqueAffix of chosenUnique.affixes) {
+                        const tier = forceT1 ? 1 : weightedChoice(weights);
+                        const t1Range = uniqueAffix.T1; const t10Range = uniqueAffix.T10;
+                        const minVal = interpolateByTier(tier, t1Range[0], t10Range[0]);
+                        const maxVal = interpolateByTier(tier, t1Range[1], t10Range[1]);
+                        aff.push({ stat: uniqueAffix.stat, tier: tier, value: rand(minVal, maxVal) });
+                    }
+                    this.uniqueId = chosenUnique.uniqueId;
+                    this.name = chosenUnique.name;
+                    this.uniqueProps = {};
+                    for (const key in chosenUnique.uniqueProps) {
+                        const prop = chosenUnique.uniqueProps[key];
+                        if (typeof prop === 'object' && prop.T1 !== undefined) {
+                            const tier = forceT1 ? 1 : weightedChoice(weights);
+                            this.uniqueProps[key] = { value: interpolateByTier(tier, prop.T1, prop.T10), tier: tier };
+                        } else {
+                            this.uniqueProps[key] = { value: prop, tier: null };
+                        }
+                    }
+                    return aff;
+                }
+                const c = RAR_AFFIX[r];
+                const used = new Set();
+                const aff = [];
+                for (let i = 0; i < c; i++) {
+                    let s; let tries = 0;
+                    do { s = choice(STAT_KEYS); tries++; } while (used.has(s) && tries < 20);
+                    used.add(s);
+                    const t = weightedChoice(weights);
+                    const range = AFFIX_RANGES[s]["T" + t];
+                    aff.push({ stat: s, tier: t, value: rand(range[0], range[1]) });
+                }
+                return aff;
+            }
+            essenceYield() { return RAR_ESSENCE[this.rarity] }
+            upgrade() {
+                if (this.rarity === 'U') {
+                    UI.showNotification("Unique items cannot be upgraded!");
+                    Game.player.essence += UPGRADE_COST[this.rarity];
+                    return;
+                }
+                const i = RAR_ORDER.indexOf(this.rarity);
+                if (i < RAR_ORDER.length - 1) {
+                    const nextRarity = RAR_ORDER[i + 1];
+                    if (nextRarity === 'U') {
+                        const newAffixes = Item.rollAffixes.call(this, 'U', this.ilvl, this.type);
+                        this.affixes = newAffixes;
+                    } else {
+                        this.rarity = nextRarity;
+                        let s; const used = new Set(this.affixes.map(a => a.stat)); let tries = 0;
+                        do { s = choice(STAT_KEYS); tries++; } while (used.has(s) && tries < 20);
+                        const weights = Item.getWeightedTiers(this.ilvl);
+                        const t = weightedChoice(weights);
+                        const range = AFFIX_RANGES[s]["T" + t];
+                        this.affixes.push({ stat: s, tier: t, value: rand(range[0], range[1]) });
+                    }
+                    this.rarity = nextRarity;
+                }
+            }
+            static affixHTML(a) {
+                const unit = AFFIX_RANGES[a.stat].unit;
+                const val = unit === "pct" ? `${fmt(a.value)}%` : `${fmt(a.value)}`;
+                return `<div class="ic-aff" data-stat="${a.stat}">${a.stat} <span class="val">+${val}</span> (T${a.tier})</div>`;
+            }
+            toHTML(context = "loot") {
+                const c = document.createElement("div");
+                c.className = "icard rar" + this.rarity; c.draggable = true;
+                c.dataset.id = this.id; c.dataset.ctx = context;
+                const rarText = RAR[this.rarity], emoji = TYPE_EMOJI[this.type] || "🞄";
+                let bodyHTML = this.affixes.map(a => Item.affixHTML(a)).join("");
+                if (this.uniqueId && UNIQUE_DESCRIPTIONS[this.uniqueId]) {
+                    const uniqueDesc = UNIQUE_DESCRIPTIONS[this.uniqueId](this.uniqueProps);
+                    bodyHTML += `<div class="ic-unique-aff">${uniqueDesc}</div>`;
+                }
+                c.innerHTML = `<div class="ic-top"><div class="ic-type">${emoji}</div><div class="ic-level">Lvl: ${this.ilvl}</div><div class="ic-rar">${rarText}</div><button class="ic-lock" title="lock/unlock">${this.locked?LOCK_EMOJI.lock:LOCK_EMOJI.unlock}</button></div><div class="ic-name">${this.name}</div><div class="ic-sep"></div><div class="ic-body" style="flex:1;display:block;overflow:auto">${bodyHTML}</div><div class="ic-foot"></div>`;
+                c.querySelector(".ic-lock").onclick = e => { e.stopPropagation(); this.locked = !this.locked; UI.renderLoot(); UI.renderInventory(); };
+                c.addEventListener("click", () => {
+                    if (context === "inventory") {
+                        for (const it of Game.player.loot) it.selected = false;
+                        let wasSelected = this.selected;
+                        for (const k of Object.keys(Game.player.inv)) { const it = Game.player.inv[k]; if (it) it.selected = false; }
+                        this.selected = !wasSelected;
+                    } else {
+                        for (const k of Object.keys(Game.player.inv)) { const it = Game.player.inv[k]; if (it) it.selected = false; }
+                        this.selected = !this.selected;
+                    }
+                    UI.renderLoot(); UI.renderInventory();
+                });
+                c.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "item", id: this.id })); c.classList.add("ghost"); });
+                c.addEventListener("dragend", () => c.classList.remove("ghost"));
+                c.querySelectorAll(".ic-aff").forEach(el => {
+                    el.addEventListener("mouseenter", () => UI.setHoverStat(el.dataset.stat));
+                    el.addEventListener("mouseleave", () => UI.setHoverStat(""));
+                });
+                if (this.selected) c.classList.add("sel");
+                if (this.locked) c.classList.add("locked");
+                return c;
+            }
+        }
+        const ItemNameGen = {
+            prefix: {
+                N: ["Rusty", "Broken", "Old", "Simple", "Worn", "Decayed"],
+                M: ["Magic", "Glowing", "Arcane", "Mystic", "Adept's", "Apprentice's"],
+                R: ["Grand", "Dire", "Masterwork", "Savage", "Vicious", "Cruel"],
+                U: ["Divine", "Godly", "Cosmic", "Relic", "Storm's", "Emperor's"]
+            },
+            suffix: {
+                N: ["", "of Agony", "of Pain", "of Harm"],
+                M: ["of Sorcery", "of the Apprentice", "of Sparks", "of Haste"],
+                R: ["of the Titan", "of the Assassin", "of the Guardian", "of Carnage"],
+                U: ["of Apocalypse", "of Ancient Kings", "of the Void", "Legacy"]
+            },
+            noun: {
+                Gun: ["Pistol", "Handgun", "Revolver", "Flintlock"],
+                Helmet: ["Helm", "Crown", "Cap", "Headguard"],
+                Chest: ["Plate", "Armor", "Mail", "Vestment"],
+                Boots: ["Shoes", "Greaves", "Boots", "Sabatons"],
+                Belt: ["Belt", "Strap", "Girdle", "Sash"],
+                Ring: ["Ring", "Loop", "Band", "Seal"]
+            },
+            random(type, rar) {
+                const p = choice(this.prefix[rar] || this.prefix.N);
+                const n = choice(this.noun[type] || ["Thing"]);
+                if (rar === 'N' && Math.random() < 0.6) return `${p} ${n}`;
+                const s = choice(this.suffix[rar] || this.suffix.N);
+                let name = `${p} ${n} ${s}`;
+                if (name.length > 20 && n.length > 6) name = `${p} ${n}`;
+                return name.trim();
+            }
+        };
+
+        /* Player */
+        class Player {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.r = 16;
+                this.dir = { x: 1, y: 0 };
+                this.moveDir = { x: 1, y: 0 };
+                this.base = {
+                    damage: 8, attackSpeed: 2.2, maxLife: 25, lifeRegen: 0.0, armor: 5,
+                    critChance: 3, critDamage: 124, moveSpeed: 150, magicFind: 1
+                };
+                this.life = this.base.maxLife;
+                this.level = 1; this.kill = 0; this.totalKills = 0; this.wave = 0; this.xp = 0; this.xpNext = 100;
+                this.inv = { Gun: null, Helmet: null, Chest: null, Boots: null, Belt: null, Ring: null };
+                this.loot = []; this.essence = 0; this.cooldown = 0;
+                this.frenzyStacks = 0; this.frenzyTimer = 0;
+                this.guardianShieldActive = false; this.guardianShieldTimer = 0; this.guardianShieldCooldown = 0;
+                this.guardianShieldColor = "#a78bfa";
+                this.stormRunnerTrailCd = 0; this.blinkCooldown = 0;
+                this.juggernautStacks = 0; this.timeStationary = 0;
+                this.novaHitCounter = 0; this.novaHitTimer = 0;
+                this.greedBuffTimer = 0;
+            }
+            derived() {
+                const sum = { flat: {}, pct: {} };
+                const add = (k, v, u) => {
+                    if (u === "pct") { sum.pct[k] = (sum.pct[k] || 0) + v; } 
+                    else { sum.flat[k] = (sum.flat[k] || 0) + v; }
+                };
+                for (const t of TYPE_KEYS) {
+                    const it = this.inv[t];
+                    if (!it) continue;
+                    for (const a of it.affixes) {
+                        const u = AFFIX_RANGES[a.stat].unit;
+                        add(a.stat, a.value, u);
+                    }
+                }
+                const s = {
+                    damage: (this.base.damage + (sum.flat["Damage"] || 0)) * (1 + (sum.pct["Damage %"] || 0) / 100),
+                    attackSpeed: this.base.attackSpeed * (1 + (sum.pct["Attack Speed"] || 0) / 100),
+                    maxLife: this.base.maxLife + (sum.flat["Maximum Life"] || 0),
+                    lifeRegen: this.base.lifeRegen + (sum.flat["Life Regen"] || 0),
+                    armor: this.base.armor + (sum.flat["Armor"] || 0),
+                    critChance: this.base.critChance + (sum.pct["Crit Chance"] || 0),
+                    critDamage: this.base.critDamage + (sum.pct["Crit Damage"] || 0),
+                    moveSpeed: this.base.moveSpeed * (1 + (sum.pct["Move Speed"] || 0) / 100),
+                    magicFind: this.base.magicFind + (sum.pct["Magic Find"] || 0)
+                };
+
+                const equippedGun = this.inv.Gun;
+                if (equippedGun && equippedGun.uniqueId === 'UNIQUE_GUN_PIERCE') { s.attackSpeed *= (1 + equippedGun.uniqueProps.attackSpeedModifier.value); }
+                
+                const equippedHelmet = this.inv.Helmet;
+                if (equippedHelmet) {
+                    if (equippedHelmet.uniqueId === 'UNIQUE_HELMET_FRENZY' && this.frenzyStacks > 0) { s.moveSpeed *= (1 + this.frenzyStacks * equippedHelmet.uniqueProps.moveSpeedPerStack.value); }
+                    if (equippedHelmet.uniqueId === 'UNIQUE_HELMET_LIFE_FOUNTAIN') { s.lifeRegen *= equippedHelmet.uniqueProps.lifeRegenMultiplier.value; s.armor *= (1 - equippedHelmet.uniqueProps.armorReduction.value); }
+                }
+                
+                const equippedBelt = this.inv.Belt;
+                if (equippedBelt) {
+                    if (equippedBelt.uniqueId === 'UNIQUE_BELT_JUGGERNAUT' && this.juggernautStacks > 0) {
+                        s.armor *= (1 + this.juggernautStacks * equippedBelt.uniqueProps.armorPerStack.value);
+                        s.lifeRegen += this.juggernautStacks * equippedBelt.uniqueProps.regenPerStack.value;
+                    }
+                }
+
+                const equippedRing = this.inv.Ring;
+                if (equippedRing) {
+                    if (equippedRing.uniqueId === 'UNIQUE_RING_GREED' && this.greedBuffTimer > 0) {
+                        const props = equippedRing.uniqueProps;
+                        s.magicFind *= (1 + props.magicFindBonus.value);
+                    }
+                }
+
+                this.life = Math.min(this.life, s.maxLife);
+                return s;
+            }
+            dps() {
+                const s = this.derived();
+                const c = 1 + (s.critChance / 100) * (s.critDamage / 100 - 1);
+                return s.damage * s.attackSpeed * c;
+            }
+            gainXP(n) {
+                Game.currentWaveXp += n;
+                this.xp += n;
+                if (this.xp >= this.xpNext) {
+                    this.xp -= this.xpNext;
+                    this.level++;
+                    this.xpNext = Math.floor(this.xpNext * LEVEL_XP_MULTIPLIER);
+                    UI.updateHUD();
+                    Game.pause(true);
+                    UI.showLevelUp();
+                }
+                UI.updateXP();
+            }
+            takeDamage(a) {
+                const s = this.derived();
+                let incomingDamage = a;
+                const equippedChest = this.inv.Chest;
+                if (this.guardianShieldActive && equippedChest && equippedChest.uniqueId === 'UNIQUE_CHEST_GUARDIAN') {
+                    incomingDamage *= (1 - equippedChest.uniqueProps.damageReduction.value);
+                }
+                const mitig = incomingDamage * (100 / (100 + s.armor));
+                if (equippedChest && equippedChest.uniqueId === 'UNIQUE_CHEST_GUARDIAN' && !this.guardianShieldActive && this.guardianShieldCooldown <= 0) {
+                    if (mitig > s.maxLife * equippedChest.uniqueProps.threshold.value) {
+                        this.guardianShieldActive = true;
+                        this.guardianShieldTimer = equippedChest.uniqueProps.duration.value;
+                        UI.updateBuffs();
+                    }
+                }
+                this.life -= mitig;
+                if (this.life < 0) this.life = 0;
+            }
+            heal(a) {
+                const s = this.derived();
+                this.life = Math.min(s.maxLife, this.life + a);
+            }
+        }
+
+        /* Enemy */
+        class Enemy {
+            constructor(x, y, wave, type = "grunt", rarity = "Normal", stunOverride = null) {
+                this.id = uid();
+                const sc = WAVE_SCALE(wave);
+                this.x = x; this.y = y; this.type = type; this.rarity = rarity;
+                
+                let baseHp = 12, baseDmg = 6, baseSpd = 80, baseXp = 0;
+                this.r = 14;
+
+                this.blessedBy = null;
+                this.actionCD = rand(0.5, 1.5);
+                
+                switch (type) {
+                    case 'brute': this.r *= 1.12; this.shape = 'hexagon'; baseXp = 5; baseHp *= 2; baseDmg *= 1.5; baseSpd *= 0.75; break;
+                    case 'slime': this.r *= 2; this.shape = 'circle'; this.color = '#84cc16'; baseXp = 7; baseHp *= 4; baseSpd *= 0.25; break;
+                    case 'rusher': this.r *= 0.5; this.shape = 'circle'; this.color = '#f59e0b'; baseXp = 2; baseHp *= 0.5; baseSpd *= 1.5; break;
+                    case 'watcher': this.shape = 'circle'; baseXp = 4; baseHp *= 1; baseDmg *= 1; baseSpd *= 0.8; this.attackRange = 400; break;
+                    case 'shaman': this.r = 15; this.shape = 'pentagon'; baseXp = 4; baseHp *= 1.2; baseDmg = 0; baseSpd *= 0.66; this.attackRange = 550; this.isCasting = false; this.castTime = 0; break;
+                    case 'bomber': this.r = 12; this.shape = 'circle'; baseXp = 7; baseHp *= 0.5; baseDmg = baseDmg * 2.5; baseSpd *= 1.4; break;
+                    case 'grunt': default: this.shape = 'circle'; baseXp = 3.5; break;
+                }
+                
+                if (type !== 'slime' && type !== 'rusher') { this.color = choice(["#ef4444", "#f59e0b", "#10b981", "#60a5fa", "#eab308"]); }
+                
+                this.xp = baseXp * (1 + (wave - 1) * WAVE_XP_MULTIPLIER);
+                
+                if (this.rarity === 'Magic' || this.rarity === 'Rare') {
+                    const buffPool = ['hp', 'dmg', 'spd', 'size'];
+                    buffPool.sort(() => 0.5 - Math.random());
+                    let buffCount = 0;
+                    let buffMultiplier = 1.0;
+                    if(this.rarity === 'Magic') { buffCount = 2; buffMultiplier = 1.3; }
+                    else if (this.rarity === 'Rare') { buffCount = 3; buffMultiplier = 1.6; }
+                    const buffsToApply = buffPool.slice(0, buffCount);
+                    for (const buff of buffsToApply) {
+                        if (buff === 'hp') baseHp *= buffMultiplier;
+                        if (buff === 'dmg') baseDmg *= buffMultiplier;
+                        if (buff === 'spd') baseSpd *= buffMultiplier;
+                        if (buff === 'size') this.r *= buffMultiplier;
+                    }
+                    if (this.rarity === 'Magic') this.xp *= 2;
+                    if (this.rarity === 'Rare') this.xp *= 4;
+
+                    // === YENİ KOD BAŞLANGICI: KUTSANMIŞ EFEKTİ ===
+                    if (Math.random() < 0.5) {
+                        this.blessedBy = 'self'; // Shaman tarafından değil, kendiliğinden kutsanmış olduğunu belirtir.
+                    }
+                    // === YENİ KOD BİTİŞİ ===
+                }
+                
+                this.maxLife = baseHp * sc.hpMul;
+                this.life = this.maxLife;
+                this.damage = baseDmg * sc.dmgMul;
+                this.speed = baseSpd * sc.spdMul;
+                this.hitCD = 0;
+                this.stunCD = 0;
+                this.showHP = false;
+                this.spawnStunTimer = stunOverride !== null ? stunOverride : 1.5;
+            }
+        }
+
+        /* Game */
+        const Game = {
+            canvas: null, ctx: null, w: 1476, h: 846, worldW: 1476 * 2, worldH: 846 * 2,
+            camX: 0, camY: 0, minimap: null, minimapCtx: null, frame: null, paused: false,
+            player: null, bullets: [], enemyBullets: [], silhouettes: [], groundEffects: [], // YENİ KOD: silhouettes dizisi eklendi
+            lastTime: 0, time: 0, timer: 45.0, spawnClock: 0, floaters: [], state: "start",
+            currentWaveXp: 0, justDied: false,
+            init() {
+                this.canvas = document.getElementById("game");
+                this.ctx = this.canvas.getContext("2d");
+                this.frame = document.getElementById("arenaFrame");
+                this.minimap = document.getElementById("minimap");
+                this.minimapCtx = this.minimap.getContext("2d");
+                this.player = new Player(this.w / 2, this.h / 2);
+                UI.populateSortOptions(); UI.renderInventory(); UI.renderStats();
+                this.bindControls(); UI.syncEssence();
+            },
+            startArena(isSameWave = false) {
+                this.justDied = false;
+                if (this.player.wave === 0) isSameWave = false;
+                if (!isSameWave) {
+                    this.player.wave++;
+                    if (this.player.wave > 1) { this.player.heal(this.player.derived().maxLife * 0.25); }
+                }
+                this.currentWaveXp = 0;
+                this.state = "arena";
+                this.timer = 60.0;
+                this.enemies = []; this.bullets = []; this.enemyBullets = []; this.groundEffects = []; this.floaters = [];
+                this.player.kill = 0;
+                this.player.x = this.worldW / 2;
+                this.player.y = this.worldH / 2;
+                document.getElementById("startScreen").classList.add("hidden");
+                document.getElementById("buildScreen").classList.add("hidden");
+                document.getElementById("arenaScreen").classList.remove("hidden");
+                UI.updateHUD(); UI.updateXP();
+                this.lastTime = now();
+                this.loop();
+            },
+            endArenaToBuild(playerDied = false) {
+                this.justDied = playerDied;
+                this.player.frenzyStacks = 0; this.player.frenzyTimer = 0;
+                this.player.guardianShieldActive = false; this.player.guardianShieldTimer = 0; this.player.guardianShieldCooldown = 0;
+                this.player.juggernautStacks = 0; this.player.timeStationary = 0; this.player.novaHitCounter = 0; this.player.novaHitTimer = 0;
+                UI.updateBuffs();
+                if (playerDied) { this.player.xp = Math.max(0, this.player.xp - Math.floor(this.player.xp * 0.33)); }
+                this.state = "build";
+                document.getElementById("arenaScreen").classList.add("hidden");
+                document.getElementById("buildScreen").classList.remove("hidden");
+                UI.renderLoot(); UI.renderInventory(); UI.renderStats();
+                UI.syncEssence(); UI.updateXP(); UI.updateButtonStates();
+            },
+            bindControls() {
+                const keys = {}, mouse = { x: 0, y: 0, down: false };
+                window.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true; });
+                window.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+                this.canvas.addEventListener("mousemove", e => {
+                    const r = this.canvas.getBoundingClientRect();
+                    mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+                    const worldMouseX = mouse.x + this.camX; const worldMouseY = mouse.y + this.camY;
+                    const dx = worldMouseX - this.player.x, dy = worldMouseY - this.player.y;
+                    const l = Math.hypot(dx, dy) || 1;
+                    this.player.dir = { x: dx / l, y: dy / l };
+                });
+                this.canvas.addEventListener("mousedown", () => { mouse.down = true; });
+                window.addEventListener("mouseup", () => { mouse.down = false; });
+                const step = dt => {
+                    if (this.state !== "arena" || this.paused) return;
+                    const s = this.player.derived(), sp = s.moveSpeed;
+                    let vx = 0, vy = 0;
+                    if (keys["w"]) vy -= 1; if (keys["s"]) vy += 1; if (keys["a"]) vx -= 1; if (keys["d"]) vx += 1;
+
+
+
+                    if (keys[' ']) {
+                        const equippedBoots = this.player.inv.Boots;
+                        if (equippedBoots && equippedBoots.uniqueId === 'UNIQUE_BOOTS_BLINK' && this.player.blinkCooldown <= 0) {
+                            const props = equippedBoots.uniqueProps;
+
+                            // Silüet oluştur: Işınlanmadan önceki konumu al
+                            this.silhouettes.push({
+                                x: this.player.x,
+                                y: this.player.y,
+                                r: this.player.r,
+                                life: 0.5,      // Silüetin ömrü (yarım saniye)
+                                maxLife: 0.5    // Opaklık hesaplaması için
+                            });
+                            
+                            // Yeni konumu fare yönü yerine son hareket yönüne göre hesapla
+                            this.player.x = clamp(this.player.x + this.player.moveDir.x * props.distance.value, 0 + this.player.r, this.worldW - this.player.r);
+                            this.player.y = clamp(this.player.y + this.player.moveDir.y * props.distance.value, 0 + this.player.r, this.worldH - this.player.r);
+                            
+                            this.player.blinkCooldown = props.cooldown.value;
+                            UI.updateBuffs();
+                            keys[' '] = false;
+                        }
+                    }
+
+                    if (vx !== 0 || vy !== 0) {
+                        const l = Math.hypot(vx, vy) || 1;
+                        // Son hareket yönünü güncelle
+                        this.player.moveDir.x = vx / l;
+                        this.player.moveDir.y = vy / l;
+
+                        this.player.x = clamp(this.player.x + this.player.moveDir.x * sp * dt, 0 + this.player.r, this.worldW - this.player.r);
+                        this.player.y = clamp(this.player.y + this.player.moveDir.y * sp * dt, 0 + this.player.r, this.worldH - this.player.r);
+                        
+                        this.player.stormRunnerTrailCd -= dt;
+                        const equippedBoots = this.player.inv.Boots;
+                        if (equippedBoots && equippedBoots.uniqueId === 'UNIQUE_BOOTS_ICETRAIL' && this.player.stormRunnerTrailCd <= 0) {
+                            this.player.stormRunnerTrailCd = 0.1;
+                            const props = equippedBoots.uniqueProps;
+                            this.groundEffects.push({ type: 'ice_trail', x: this.player.x + rand(-5, 5), y: this.player.y + rand(-5, 5), r: 20, age: 0, duration: props.duration.value, slow: props.slowPercentage.value });
+                        }
+                        if (this.player.juggernautStacks > 0) {
+                            this.player.juggernautStacks = 0; this.player.timeStationary = 0; UI.updateBuffs();
+                        }
+                    } else {
+                        const equippedBelt = this.player.inv.Belt;
+                        if (equippedBelt && equippedBelt.uniqueId === 'UNIQUE_BELT_JUGGERNAUT') {
+                            const props = equippedBelt.uniqueProps;
+                            if (this.player.juggernautStacks < props.maxStacks.value) {
+                                this.player.timeStationary += dt;
+                                if (this.player.timeStationary >= props.interval.value) {
+                                    this.player.timeStationary -= props.interval.value;
+                                    this.player.juggernautStacks++;
+                                    UI.updateBuffs();
+                                }
+                            }
+                        }
+                    }
+                    this.player.heal(s.lifeRegen * dt);
+                    if (this.player.cooldown > 0) { this.player.cooldown -= dt; }
+                    if (mouse.down && this.player.cooldown <= 0) {
+                        const off = 5; // 1. Adımda yaptığımız değişiklik
+                        const px = this.player.x + this.player.dir.x * (this.player.r + off);
+                        const py = this.player.y + this.player.dir.y * (this.player.r + off);
+                        const equippedGun = this.player.inv.Gun;
+
+                        // Varsayılan mermi özelliklerini tanımla
+                        let bulletSpeed = 420;
+                        let bulletLife = 1.5;
+                        let bulletRadius = 4;
+
+                        // Soul Piercer kuşanılmışsa özellikleri değiştir
+                        if (equippedGun && equippedGun.uniqueId === 'UNIQUE_GUN_PIERCE') {
+                            const props = equippedGun.uniqueProps;
+                            bulletRadius = 8;
+                            bulletSpeed *= props.bulletSpeedMultiplier.value;
+                            bulletLife *= props.bulletRangeMultiplier.value;
+                        }
+                        
+                        // Apocalypse Carrier (Shotgun) mekaniği
+                        if (equippedGun && equippedGun.uniqueId === 'UNIQUE_GUN_SHOTGUN') {
+                            const props = equippedGun.uniqueProps;
+                            const totalAngle = props.spreadAngle.value * (Math.PI / 180);
+                            const angleStep = totalAngle / (props.bulletCount.value - 1);
+                            const startAngle = -totalAngle / 2;
+                            for (let i = 0; i < props.bulletCount.value; i++) {
+                                const angle = startAngle + i * angleStep;
+                                const dirX = this.player.dir.x * Math.cos(angle) - this.player.dir.y * Math.sin(angle);
+                                const dirY = this.player.dir.x * Math.sin(angle) + this.player.dir.y * Math.cos(angle);
+                                this.bullets.push({ x: px, y: py, r: bulletRadius, vx: dirX * bulletSpeed, vy: dirY * bulletSpeed, life: bulletLife, hitEnemies: new Set(), isNova: false });
+                            }
+                        } else {
+                            // Normal veya Soul Piercer mermisi
+                            this.bullets.push({ x: px, y: py, r: bulletRadius, vx: this.player.dir.x * bulletSpeed, vy: this.player.dir.y * bulletSpeed, life: bulletLife, hitEnemies: new Set(), isNova: false });
+                        }
+                        this.player.cooldown = 1 / s.attackSpeed;
+                    }
+                };
+                this.updateControls = step;
+            },
+            pause(v) { this.paused = v !== undefined ? v : !this.paused; this.frame.classList.toggle("paused", this.paused); document.getElementById("pauseBtn").textContent = this.paused ? "Devam" : "Duraklat"; },
+            spawnEnemy() {
+                // 1. Sürünün Nadirliğine Karar Ver
+                const rareChance = RARE_CHANCE_BASE + (this.player.wave * RARE_CHANCE_WAVE_SCALE);
+                const magicChance = MAGIC_CHANCE_BASE + (this.player.wave * MAGIC_CHANCE_WAVE_SCALE);
+                const roll = Math.random();
+                let rarity = 'Normal';
+                if (roll < rareChance) {
+                    rarity = 'Rare';
+                } else if (roll < rareChance + magicChance) {
+                    rarity = 'Magic';
+                }
+
+                // 2. Sürünün Boyutuna Karar Ver
+                const packOptions = PACK_STRUCTURES[rarity];
+                const packSize = weightedChoice(packOptions.map(p => ({ value: p.size, weight: p.weight })));
+
+                // 3. Sürüdeki Tüm Düşmanların Tipine Karar Ver
+                const r = Math.random();
+                let type = 'grunt';
+                if (r < 0.028) { type = 'bomber'; } 
+                else if (r < 0.056) { type = 'shaman'; } 
+                else if (r < 0.096) { type = 'slime'; } 
+                else if (r < 0.136) { type = 'brute'; } 
+                else if (r < 0.236) { type = 'rusher'; } 
+                else if (r < 0.436) { type = 'watcher'; }
+
+                // === YENİ SPAWN MANTIĞI BAŞLANGICI ===
+
+                // 4. Görünmez Çemberin Yarıçapını Belirle
+                // Minimum yarıçap: Ekranın genişlik ve yüksekliğinin ortalamasının yarısı
+                const minRadius = (this.w + this.h) / 4; 
+                // Maksimum yarıçap: Haritanın köşegeninin yarısı (oyuncudan haritanın en uzak köşesi)
+                const maxRadius = Math.hypot(this.worldW / 2, this.worldH / 2);
+                // Bu iki değer arasında rastgele bir yarıçap seç
+                const spawnRadius = rand(minRadius, maxRadius);
+
+                // 5. Sürünün Doğacağı Merkezi Bir Açı Belirle
+                // Bu, tüm sürünün çemberin hangi yönünde (kuzey, güneybatı vb.) doğacağını belirler.
+                const centralAngle = rand(0, Math.PI * 2);
+                
+                // 6. Sürüdeki Her Düşmanı Merkezin Etrafına Oluştur
+                for (let i = 0; i < packSize; i++) {
+                    // Sürü içindeki düşmanların birbirine olan yakınlığını belirleyen küçük bir açı sapması
+                    const angleOffset = (packSize > 1) ? (i - (packSize - 1) / 2) * 0.2 : 0; // 0.2 radyan ~ 11 derece
+                    const finalAngle = centralAngle + angleOffset;
+
+                    // Açı ve yarıçapı kullanarak X ve Y koordinatlarını hesapla
+                    let finalX = this.player.x + Math.cos(finalAngle) * spawnRadius;
+                    let finalY = this.player.y + Math.sin(finalAngle) * spawnRadius;
+                    
+                    // Düşmanın harita sınırları dışına taşmadığından emin ol
+                    finalX = clamp(finalX, 0, this.worldW);
+                    finalY = clamp(finalY, 0, this.worldH);
+
+                    // Son olarak düşmanı yarat
+                    this.enemies.push(new Enemy(finalX, finalY, this.player.wave, type, rarity));
+                }
+                // === YENİ SPAWN MANTIĞI BİTİŞİ ===
+            },
+            update(dt) {
+                this.time += dt;
+                this.updateControls(dt);
+                let targetCamX = this.player.x - this.w / 2;
+                let targetCamY = this.player.y - this.h / 2;
+                this.camX = clamp(targetCamX, 0, this.worldW - this.w);
+                this.camY = clamp(targetCamY, 0, this.worldH - this.h);
+
+                if (this.player.frenzyTimer > 0) {
+                    this.player.frenzyTimer -= dt;
+                    if (this.player.frenzyTimer <= 0) {
+                        this.player.frenzyStacks--;
+                        if (this.player.frenzyStacks > 0) {
+                            const helmet = this.player.inv.Helmet;
+                            if (helmet && helmet.uniqueId === 'UNIQUE_HELMET_FRENZY') { this.player.frenzyTimer = helmet.uniqueProps.duration.value; }
+                        }
+                    }
+                }
+                if (this.player.guardianShieldTimer > 0) {
+                    this.player.guardianShieldTimer -= dt;
+                    if (this.player.guardianShieldTimer <= 0) {
+                        this.player.guardianShieldActive = false;
+                        const equippedChest = this.player.inv.Chest;
+                        if (equippedChest && equippedChest.uniqueId === 'UNIQUE_CHEST_GUARDIAN') { this.player.guardianShieldCooldown = equippedChest.uniqueProps.cooldown.value; }
+                    }
+                } else if (this.player.guardianShieldCooldown > 0) {
+                    this.player.guardianShieldCooldown -= dt;
+                    if (this.player.guardianShieldCooldown < 0) { this.player.guardianShieldCooldown = 0; }
+                }
+                if (this.player.blinkCooldown > 0) { this.player.blinkCooldown -= dt; }
+                if (this.player.novaHitTimer > 0) {
+                    this.player.novaHitTimer -= dt;
+                    if(this.player.novaHitTimer <= 0) { this.player.novaHitCounter = 0; }
+                }
+                if (this.player.greedBuffTimer > 0) {
+                    this.player.greedBuffTimer -= dt;
+                }
+                
+                UI.updateBuffs();
+                this.timer -= dt;
+                if (this.timer <= 0) { this.endArenaToBuild(); return; }
+                UI.updateTimer(this.timer);
+                const sc = WAVE_SCALE(this.player.wave), baseSpawn = 4.0;
+                this.spawnClock -= dt;
+                if (this.spawnClock <= 0) { this.spawnEnemy(); this.spawnClock = baseSpawn / sc.spawnMul; }
+
+                for (let i = this.bullets.length - 1; i >= 0; i--) { const b = this.bullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0 || b.x < -30 || b.x > this.worldW + 30 || b.y < -30 || b.y > this.worldH + 30) { this.bullets.splice(i, 1); } }
+                for (let i = this.enemyBullets.length - 1; i >= 0; i--) { const b = this.enemyBullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; if (b.life <= 0 || b.x < -30 || b.x > this.worldW + 30 || b.y < -30 || b.y > this.worldH + 30) { this.enemyBullets.splice(i, 1); continue; } if (Math.hypot(this.player.x - b.x, this.player.y - b.y) < this.player.r + b.r) { this.player.takeDamage(b.dmg); this.enemyBullets.splice(i, 1); continue; } }
+                for (let i = this.groundEffects.length - 1; i >= 0; i--) {
+                    const effect = this.groundEffects[i]; effect.age += dt;
+                    if (effect.age >= effect.duration) { this.groundEffects.splice(i, 1); continue; }
+                    if (effect.type !== 'ice_trail') { if (effect.age < effect.growTime) { effect.r = (effect.age / effect.growTime) * effect.maxR; } else { effect.r = effect.maxR; } if (effect.age >= effect.duration) { effect.alpha = 1 - (effect.age - effect.duration) / effect.fadeTime; } if (effect.alpha <= 0) { this.groundEffects.splice(i, 1); continue; } if (Math.hypot(this.player.x - effect.x, this.player.y - effect.y) < this.player.r + effect.r) { this.player.takeDamage(effect.dps * dt); } }
+                }
+                for (const e of this.enemies) {
+                    if (e.spawnStunTimer > 0) {
+                    e.spawnStunTimer -= dt;
+                    continue; // Düşman yeni doğduysa, bu karedeki tüm hareket/saldırı mantığını atla
+                }
+                    if (e.stunCD > 0) { e.stunCD -= dt; continue; }
+                    e.actionCD -= dt;
+                    let finalSpeed = e.speed;
+                    for (const trail of this.groundEffects) { if (trail.type === 'ice_trail' && Math.hypot(e.x - trail.x, e.y - trail.y) < e.r + trail.r) { finalSpeed *= (1 - trail.slow); break; } }
+                    const distToPlayer = Math.hypot(this.player.x - e.x, this.player.y - e.y);
+                    switch (e.type) {
+                        case 'watcher':
+                            if (distToPlayer > e.attackRange) { const d = distToPlayer || 1; e.x += ((this.player.x - e.x) / d) * finalSpeed * dt; e.y += ((this.player.y - e.y) / d) * finalSpeed * dt; } 
+                            else if (e.actionCD <= 0) { const d = distToPlayer || 1; this.enemyBullets.push({ x: e.x, y: e.y, r: 4, vx: ((this.player.x - e.x) / d) * 220, vy: ((this.player.y - e.y) / d) * 220, life: 3.0, dmg: e.damage }); e.actionCD = 1 / sc.spawnMul; }
+                            break;
+                        case 'shaman':
+                            if (distToPlayer > e.attackRange) { const d = distToPlayer || 1; e.x += ((this.player.x - e.x) / d) * finalSpeed * dt; e.y += ((this.player.y - e.y) / d) * finalSpeed * dt; } 
+                            else if (e.actionCD <= 0 && !e.isCasting) {
+                                let bestTarget = null, minDist = Infinity;
+                                for (const other of this.enemies) { if (other.id === e.id || other.type === 'shaman' || other.blessedBy) continue; if(Math.hypot(e.x - other.x, e.y - other.y) < minDist){ minDist = Math.hypot(e.x - other.x, e.y - other.y); bestTarget = other; } }
+                                if (bestTarget) { e.isCasting = true; e.castTime = 1.0; e.actionCD = 4.0; setTimeout(() => { if (e.life > 0 && bestTarget.life > 0) { bestTarget.blessedBy = e.id; } e.isCasting = false; }, 1000); } 
+                                else { e.actionCD = 1.0; }
+                            }
+                            if (e.isCasting) e.castTime -= dt;
+                            break;
+                        default: const d = distToPlayer || 1; e.x += ((this.player.x - e.x) / d) * finalSpeed * dt; e.y += ((this.player.y - e.y) / d) * finalSpeed * dt; if (e.type === 'bomber' && distToPlayer < this.player.r + e.r) { e.life = 0; } break;
+                    }
+                    if (distToPlayer < e.r + this.player.r) {
+                        const nx = (e.x - this.player.x) / distToPlayer, ny = (e.y - this.player.y) / distToPlayer, push = (e.r + this.player.r) - distToPlayer;
+                        e.x += nx * push; e.y += ny * push;
+                        e.hitCD -= dt;
+                        if (e.hitCD <= 0) {
+                            const equippedChest = this.player.inv.Chest;
+                            if (equippedChest && equippedChest.uniqueId === 'UNIQUE_CHEST_THORNS') {
+                                const reflectedDmg = e.damage * equippedChest.uniqueProps.reflectPercentage.value;
+                                e.life -= reflectedDmg; e.showHP = true;
+                                this.floaters.push({ x: e.x, y: e.y - e.r - 28, text: Math.round(reflectedDmg), color: "#f59e0b", size: 12, vy: -20, life: 1.0 });
+                            }
+                            this.player.takeDamage(e.damage); e.stunCD = 1 / 3; e.hitCD = 0.6;
+                        }
+                    } else { e.hitCD -= dt; }
+                }
+                const s = this.player.derived();
+                const equippedGun = this.player.inv.Gun;
+                for (let i = this.bullets.length - 1; i >= 0; i--) {
+                    const b = this.bullets[i];
+                    let bulletRemoved = false;
+                    for (const e of this.enemies) {
+                        if (Math.hypot(e.x - b.x, e.y - b.y) < (e.r + b.r)) {
+                            if (!b.hitEnemies.has(e.id)) {
+                                b.hitEnemies.add(e.id);
+                                
+                                const equippedBelt = this.player.inv.Belt;
+                                if (!b.isNova && equippedBelt && equippedBelt.uniqueId === 'UNIQUE_BELT_NOVABLAST') {
+                                    // --- YENİ KOD BAŞLANGICI ---
+                                    const props = equippedBelt.uniqueProps;
+                                    this.player.novaHitCounter++; // Vuruş sayacını artır
+                                    this.player.novaHitTimer = props.resetTime.value; // Sayaç sıfırlama zamanlayıcısını yeniden başlat (3sn)
+                                    UI.updateBuffs(); // Arayüzdeki sayacı güncellemek için
+
+                                    // Sayaç gereken sayıya ulaştı mı?
+                                    if (this.player.novaHitCounter >= props.hitsRequired.value) {
+                                        this.player.novaHitCounter = 0; // Sayacı sıfırla
+                                        this.player.novaHitTimer = 0; // Zamanlayıcıyı sıfırla
+                                        
+                                        const projectileCount = props.projectileCount.value;
+                                        const novaDmgMult = props.damageMultiplier.value;
+                                        const bulletSpeed = 350; // Nova mermileri biraz daha yavaş olabilir
+                                        
+                                        // Nova mermilerini oluştur ve etrafa yay
+                                        for (let j = 0; j < projectileCount; j++) {
+                                            const angle = (j / projectileCount) * Math.PI * 2;
+                                            const dirX = Math.cos(angle);
+                                            const dirY = Math.sin(angle);
+                                            this.bullets.push({
+                                                x: this.player.x,
+                                                y: this.player.y,
+                                                r: 6, // Nova mermileri biraz daha büyük olabilir
+                                                vx: dirX * bulletSpeed,
+                                                vy: dirY * bulletSpeed,
+                                                life: 1.0, // Mermi ömrü
+                                                hitEnemies: new Set(),
+                                                isNova: true, // Bu merminin bir nova mermisi olduğunu belirtir
+                                                novaDmgMult: novaDmgMult // Hasar çarpanını mermiye ekle
+                                            });
+                                        }
+                                    }
+                                    // --- YENİ KOD BİTİŞİ ---
+                                }
+
+                                let dmgReduction = e.blessedBy ? 0.25 : 1.0;
+                                let dmg = s.damage * dmgReduction;
+                                
+                                // === YENİ KOD BAŞLANGICI: CRITICALITY YÜZÜĞÜ KONTROLÜ ===
+                                const equippedRing = this.player.inv.Ring;
+                                let critMultiplier = s.critDamage / 100;
+
+                                if (equippedRing && equippedRing.uniqueId === 'UNIQUE_RING_CRITICALITY') {
+                                    critMultiplier *= equippedRing.uniqueProps.critMultiplier.value;
+                                }
+                                // === YENİ KOD BİTİŞİ ===
+
+                                let crit = false;
+                                if (Math.random() < s.critChance / 100) {
+                                    dmg *= critMultiplier; // Yeni kritik çarpanını kullan
+                                    crit = true;
+                                } else {
+                                    // YENİ KOD: Kritik değilse cezayı uygula
+                                    if (equippedRing && equippedRing.uniqueId === 'UNIQUE_RING_CRITICALITY') {
+                                        dmg *= equippedRing.uniqueProps.nonCritPenalty.value;
+                                    }
+                                }
+
+                                if (b.isNova) { dmg *= b.novaDmgMult; } 
+                                else if (equippedGun && equippedGun.uniqueId === 'UNIQUE_GUN_SHOTGUN') { dmg *= equippedGun.uniqueProps.damageModifier.value; }
+                                
+                                e.life -= dmg;
+                                e.showHP = true;
+                                this.floaters.push({ x: e.x, y: e.y - e.r - 18, text: Math.round(dmg), color: crit ? "#ef4444" : "#9ca3af", size: crit ? 14 : 12, vy: -20, life: 1.0 });
+                                
+                                if (!equippedGun || equippedGun.uniqueId !== 'UNIQUE_GUN_PIERCE') {
+                                    this.bullets.splice(i, 1);
+                                    bulletRemoved = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (bulletRemoved) continue;
+                }
+                const killed = this.enemies.filter(e => e.life <= 0);
+                if (killed.length) {
+                    for (const e of killed) {
+                        this.player.kill++; this.player.totalKills++; this.player.gainXP(e.xp);
+                        if (e.rarity === 'Rare') {
+                            const equippedRing = this.player.inv.Ring;
+                            if (equippedRing && equippedRing.uniqueId === 'UNIQUE_RING_GREED') {
+                                this.player.greedBuffTimer = equippedRing.uniqueProps.duration.value;
+                            }
+                        }
+                        const equippedHelmet = this.player.inv.Helmet;
+                        if (equippedHelmet && equippedHelmet.uniqueId === 'UNIQUE_HELMET_FRENZY') {
+                            const props = equippedHelmet.uniqueProps;
+                            this.player.frenzyStacks = Math.min(props.maxStacks.value, this.player.frenzyStacks + 1);
+                            this.player.frenzyTimer = props.duration.value;
+                            UI.updateBuffs();
+                        }
+                        if (e.type === 'slime') { for (let i = 0; i < 4; i++) { this.enemies.push(new Enemy(e.x + rand(-15, 15), e.y + rand(-15, 15), this.player.wave, 'rusher', 'Normal', 0.20)); } }
+                        if (e.type === 'bomber') {
+                            this.floaters.push({ x: e.x, y: e.y, text: "BOOM!", color: "#f97316", size: 22, vy: -15, life: 1.2 });
+                            const explosionR = e.r * 1.5;
+                            if (Math.hypot(this.player.x - e.x, this.player.y - e.y) < this.player.r + explosionR) { this.player.takeDamage(e.damage); }
+                            this.groundEffects.push({ type: 'explosion', x: e.x, y: e.y, r: 0, maxR: e.r * 3, age: 0, duration: 5.0, growTime: 0.5, fadeTime: 2.0, alpha: 1.0, dps: 6 * 0.5 * sc.dmgMul });
+                        }
+                        if (e.type === 'shaman') { for (const other of this.enemies) { if (other.blessedBy === e.id) { other.blessedBy = null; } } }
+                        
+                        let dropMultiplier = 1, qualityMultiplier = 1, maxDrops = 1;
+                        if (e.rarity === 'Magic') { dropMultiplier = 2; qualityMultiplier = 2; maxDrops = 2; } 
+                        else if (e.rarity === 'Rare') { dropMultiplier = 4; qualityMultiplier = 4; maxDrops = 4; }
+                        const mf = this.player.derived().magicFind;
+                        const baseDropChance = BASE_DROP + (1 - BASE_DROP) * (1 - 1 / (1 + mf / 75));
+                        for (let i = 0; i < maxDrops; i++) {
+                            if (Math.random() < baseDropChance * dropMultiplier) {
+                                const item_ilvl = Math.max(1, this.player.wave + randi(-1, 1));
+                                const rollModifier = (1 + Math.log10(1 + mf / 25)) * qualityMultiplier;
+                                const r = Math.random() / rollModifier;
+                                const rar = (r < 0.7) ? "N" : (r < 0.95) ? "M" : (r < 0.998) ? "R" : "U";
+                                const type = choice(TYPE_KEYS);
+                                const item = new Item({ type, rarity: rar, ilvl: item_ilvl });
+                                this.player.loot.unshift(item);
+                                const color = rar === "N" ? "#9ca3af" : rar === "M" ? "#60a5fa" : rar === "R" ? "#fbbf24" : "#ef4444";
+                                this.floaters.push({ x: e.x, y: e.y - (i * 18), text: "+1 item", color, size: 14, vy: -18, life: 1.2 });
+                            }
+                        }
+                    }
+                    this.enemies = this.enemies.filter(e => e.life > 0);
+                    UI.updateHUD();
+                }
+
+                for (let i = this.floaters.length-1; i>=0; i--) {
+                    const f = this.floaters[i];
+                    f.y += f.vy * dt; f.life -= dt;
+                    if(f.life <= 0) this.floaters.splice(i, 1);
+                }
+                for (let i = this.silhouettes.length - 1; i >= 0; i--) {
+                    const s = this.silhouettes[i];
+                    s.life -= dt;
+                    if (s.life <= 0) {
+                        this.silhouettes.splice(i, 1);
+                    }
+                }
+                if (this.player.life <= 0) { this.player.life = this.player.derived().maxLife; this.endArenaToBuild(true); return; }
+            },
+            render() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.w, this.h);
+                ctx.save();
+                ctx.translate(-this.camX, -this.camY);
+
+                for (const effect of this.groundEffects) {
+                    if (effect.type === 'ice_trail') {
+                        ctx.globalAlpha = 0.5 * (1 - (effect.age / effect.duration));
+                        ctx.fillStyle = '#3b82f6';
+                        ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2); ctx.fill();
+                    } else {
+                        ctx.globalAlpha = effect.alpha * 0.5;
+                        ctx.fillStyle = '#4d7c0f';
+                        ctx.beginPath(); ctx.arc(effect.x, effect.y, effect.r, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+                // YENİ KOD BAŞLANGICI: Silüetleri çiz
+                for (const s of this.silhouettes) {
+                    // Kalan ömre göre opaklığı (alpha) hesapla
+                    const alpha = Math.max(0, s.life / s.maxLife);
+                    ctx.globalAlpha = alpha * 0.6; // %60 opaklıkta başlasın ve solsun
+                    ctx.fillStyle = "#3b82f6"; // Oyuncuyla aynı renk veya daha açık bir ton
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1.0; // Diğer çizimleri etkilememesi için opaklığı sıfırla
+                // YENİ KOD BİTİŞİ
+                const p = this.player;
+                ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.arc(p.x + 2, p.y + 2, p.r, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#60a5fa"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+                if (p.guardianShieldActive) {
+                    ctx.globalAlpha = 0.4 + Math.sin(this.time * 8) * 0.2;
+                    ctx.beginPath();
+                    ctx.arc(p.x + 2, p.y + 2, p.r * 1.3, 0, Math.PI * 2);
+                    ctx.fillStyle = p.guardianShieldColor;
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
+                ctx.fillStyle = "#374151"; ctx.beginPath(); ctx.arc(p.x + p.dir.x * (p.r + 8), p.y + p.dir.y * (p.r + 8), 6, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#ef4444"; for (const b of this.bullets) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
+                ctx.fillStyle = "#a855f7"; for (const b of this.enemyBullets) { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); }
+
+                for (const e of this.enemies) {
+                    if (e.showHP) {
+                        const w = 24, h = 5;
+                        ctx.fillStyle = "#6b7280"; ctx.fillRect(e.x - w / 2, e.y - e.r - 16, w, h);
+                        ctx.fillStyle = "#ef4444"; ctx.fillRect(e.x - w / 2, e.y - e.r - 16, w * (e.life / e.maxLife), h);
+                    }
+                    if (e.rarity === 'Magic' || e.rarity === 'Rare') {
+                        ctx.font = "bold 13px Inter, system-ui";
+                        ctx.textAlign = "center";
+                        ctx.fillStyle = e.rarity === 'Magic' ? '#60a5fa' : '#fbbf24';
+                        ctx.fillText(e.type.toUpperCase(), e.x, e.y - e.r - 22);
+                    }
+                    ctx.fillStyle = e.color;
+                    const drawShape = (sides, radius, color, rotation = 0) => {
+                        ctx.fillStyle = color; ctx.beginPath();
+                        ctx.moveTo(e.x + radius * Math.cos(rotation), e.y + radius * Math.sin(rotation));
+                        for (let i = 1; i <= sides; i++) { const angle = (i / sides) * 2 * Math.PI + rotation; ctx.lineTo(e.x + radius * Math.cos(angle), e.y + radius * Math.sin(angle)); }
+                        ctx.closePath(); ctx.fill();
+                    };
+                    if (e.blessedBy) {
+                        ctx.strokeStyle = "#a855f7"; ctx.lineWidth = 6; ctx.globalAlpha = 0.8; ctx.beginPath();
+                        if (e.shape === 'hexagon') { const sides = 6; const radius = e.r + 5; ctx.moveTo(e.x + radius * Math.cos(Math.PI / 6), e.y + radius * Math.sin(Math.PI / 6)); for (let i = 1; i <= sides; i++) { const angle = (i / sides) * 2 * Math.PI + Math.PI / 6; ctx.lineTo(e.x + radius * Math.cos(angle), e.y + radius * Math.sin(angle)); } } 
+                        else if (e.shape === 'pentagon') { const sides = 5; const radius = e.r + 5; ctx.moveTo(e.x + radius * Math.cos(Math.PI / 10), e.y + radius * Math.sin(Math.PI / 10)); for (let i = 1; i <= sides; i++) { const angle = (i / sides) * 2 * Math.PI + Math.PI / 10; ctx.lineTo(e.x + radius * Math.cos(angle), e.y + radius * Math.sin(angle)); } } 
+                        else { ctx.arc(e.x, e.y, e.r + 5, 0, Math.PI * 2); }
+                        ctx.closePath(); ctx.stroke(); ctx.globalAlpha = 1.0;
+                    }
+                    if (e.type === 'bomber') {
+                        ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#a1a1aa';
+                        for (let i = 0; i < 8; i++) { const angle = (i / 8) * 2 * Math.PI; ctx.beginPath(); ctx.arc(e.x + e.r * Math.cos(angle), e.y + e.r * Math.sin(angle), e.r * 0.16, 0, Math.PI * 2); ctx.fill(); }
+                    } else if (e.type === 'watcher') {
+                        ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#d4d4d8'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 0.7, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#18181b'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r * 0.4, 0, Math.PI * 2); ctx.fill();
+                    } else if (e.type === 'shaman') {
+                        drawShape(5, e.r, e.color, Math.PI / 10);
+                        ctx.fillStyle = "#fff"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `${e.r * 1.4}px sans-serif`; ctx.fillText('♰', e.x, e.y + 2);
+                        if (e.isCasting) { for (let i = 0; i < 5; i++) { const angle = now() / 100 + i * (Math.PI * 2 / 5); const dist = e.r + 10 + Math.sin(now() / 100) * 5; ctx.fillStyle = `rgba(168, 85, 247, ${1 - e.castTime})`; ctx.font = `bold ${16}px sans-serif`; ctx.fillText('*', e.x + Math.cos(angle) * dist, e.y + Math.sin(angle) * dist); } }
+                    } else if (e.shape === 'hexagon') { drawShape(6, e.r, e.color, Math.PI / 6); } 
+                    else if (e.shape === 'pentagon') { drawShape(5, e.r, e.color, Math.PI / 10); } 
+                    else { ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2); ctx.fill(); }
+                }
+                for (const f of this.floaters) {
+                    ctx.globalAlpha = Math.max(0, Math.min(1, f.life));
+                    ctx.fillStyle = f.color;
+                    ctx.font = `bold ${f.size}px Inter, system-ui`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(f.text, f.x, f.y);
+                    ctx.globalAlpha = 1;
+                }
+                
+                ctx.restore();
+                
+                document.getElementById("xpLabel").textContent = `Xp ${fmt(this.player.xp,0)}/${fmt(this.player.xpNext,0)}`;
+                const s = this.player.derived();
+                const orbR = 69;
+                const orbPadding = 14;
+                const cx = orbPadding + orbR;
+                const cy = this.h - orbPadding - orbR;
+                ctx.save();
+                ctx.beginPath(); ctx.arc(cx, cy, orbR, 0, Math.PI * 2);
+                ctx.shadowColor = "rgba(0,0,0,.35)"; ctx.shadowBlur = 8;
+                ctx.fillStyle = "#991b1b"; ctx.fill();
+                ctx.beginPath(); ctx.arc(cx, cy, orbR - 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#ef4444"; ctx.fill();
+                const lifePct = Math.max(0, Math.min(1, p.life / s.maxLife));
+                if (lifePct < 1) {
+                    const missing = 1 - lifePct; const angle = missing * Math.PI * 2;
+                    const start = -Math.PI / 2 - angle / 2; const end = start + angle;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, orbR - 4, start, end);
+                    ctx.closePath(); ctx.fillStyle = "#9ca3af"; ctx.fill();
+                }
+                ctx.globalAlpha = .15; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(cx - 12, cy - 16, orbR * .6, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1; ctx.fillStyle = "#fff"; ctx.font = "bold 12px Inter"; ctx.textAlign = "center";
+                ctx.fillText(`Life ${fmt(p.life,0)}/${fmt(s.maxLife,0)}`, cx, cy + 4);
+                ctx.restore();
+            },
+            renderMinimap() {
+                const mCtx = this.minimapCtx;
+                const mW = this.minimap.width;
+                const mH = this.minimap.height;
+                const scaleX = mW / this.worldW;
+                const scaleY = mH / this.worldH;
+                
+                mCtx.clearRect(0, 0, mW, mH);
+
+                mCtx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+                mCtx.lineWidth = 2;
+                mCtx.strokeRect(this.camX * scaleX, this.camY * scaleY, this.w * scaleX, this.h * scaleY);
+
+                // Oyuncuyu YEŞİL renkte çiz
+                mCtx.fillStyle = "#22c55e"; // Yeşil
+                const playerSize = 6;
+                mCtx.fillRect(this.player.x * scaleX - playerSize / 2, this.player.y * scaleY - playerSize / 2, playerSize, playerSize);
+                
+                // Düşmanları nadirliklerine göre farklı renklerde çiz
+                const enemySize = 5;
+                for (const e of this.enemies) {
+                    if (e.rarity === 'Rare') {
+                        mCtx.fillStyle = '#eab308'; // Sarı
+                    } else if (e.rarity === 'Magic') {
+                        mCtx.fillStyle = '#60a5fa'; // Mavi
+                    } else { // Normal ('grunt')
+                        mCtx.fillStyle = '#ef4444'; // Kırmızı
+                    }
+                    mCtx.fillRect(e.x * scaleX - enemySize / 2, e.y * scaleY - enemySize / 2, enemySize, enemySize);
+                }
+            },
+            loop() {
+                if (this.state !== "arena") return;
+                const t = now();
+                const dt = Math.min(0.05, (t - this.lastTime) / 1000);
+                this.lastTime = t;
+                if (!this.paused) {
+                    this.update(dt);
+                    this.render();
+                    this.renderMinimap();
+                }
+                requestAnimationFrame(() => this.loop());
+            }
+        };
+
+        const UI = {
+            hoverStat: "",
+            elements: {
+                startBtn: document.getElementById("startBtn"), pauseBtn: document.getElementById("pauseBtn"),
+                nextWave: document.getElementById("nextWave"), sameWave: document.getElementById("sameWave"),
+                hudWave: document.getElementById("hudWave"), hudKill: document.getElementById("hudKill"),
+                hudTotalKill: document.getElementById("hudTotalKill"), hudLevel: document.getElementById("hudLevel"),
+                buildPlayerLevel: document.getElementById("buildPlayerLevel"), xpFill: document.getElementById("xpFill"),
+                timerLabel: document.getElementById("timerLabel"), timerBox: document.getElementById("timerBox"),
+                essA: document.getElementById("essCount"), essB: document.getElementById("essCountBuild"),
+                lootGrid: document.getElementById("lootGrid"), invGrid: document.getElementById("invGrid"),
+                statPanel: document.getElementById("statPanel"), levelModal: document.getElementById("levelModal"),
+                levelOptions: document.getElementById("levelOptions"), sortStat: document.getElementById("sortStat"),
+                sortTypeSel: document.getElementById("sortTypeSel"), dismSel: document.getElementById("dismSel"),
+                dismAll: document.getElementById("dismAll"), clearSel: document.getElementById("clearSel"),
+                upgradeBtn: document.getElementById("upgradeBtn"), confirmModal: document.getElementById("confirmModal"),
+                confirmYes: document.getElementById("confirmYes"), confirmNo: document.getElementById("confirmNo"),
+                sortLevel: document.getElementById("sortLevel")
+            },
+            populateSortOptions() {
+                for (const k of STAT_KEYS) { const o = document.createElement("option"); o.value = k; o.textContent = k; this.elements.sortStat.appendChild(o); }
+                for (const t of TYPE_KEYS) { const o = document.createElement("option"); o.value = t; o.textContent = `${({Gun:"🔫",Helmet:"👑",Chest:"🥻",Boots:"👞",Belt:"🩹",Ring:"💍"})[t]} ${t}`; this.elements.sortTypeSel.appendChild(o); }
+            },
+            setHoverStat(stat) { this.hoverStat = stat || ""; this.refreshHighlights(); },
+            refreshHighlights() { document.querySelectorAll(".ic-aff").forEach(el => { el.classList.toggle("hl", el.dataset.stat === this.hoverStat && this.hoverStat !== ""); }); },
+            updateHUD() {
+                this.elements.hudWave.textContent = Game.player.wave; this.elements.hudKill.textContent = Game.player.kill;
+                this.elements.hudTotalKill.textContent = Game.player.totalKills; this.elements.hudLevel.textContent = Game.player.level;
+                this.elements.buildPlayerLevel.textContent = Game.player.level; this.syncEssence();
+            },
+            updateXP() { const cur = Game.player.xp, need = Game.player.xpNext, pct = Math.max(0, Math.min(100, 100 * cur / need)); this.elements.xpFill.style.width = pct + "%"; },
+            updateTimer(t) { this.elements.timerLabel.textContent = `${fmt(t,2)}s`; this.elements.timerBox.classList.toggle("danger", t <= 10.0); },
+            syncEssence() { this.elements.essA.textContent = Game.player.essence; this.elements.essB.textContent = Game.player.essence; },
+            renderStats() {
+                const p = Game.player, s = p.derived(), panel = this.elements.statPanel;
+                const lines = [`DPS: ${fmt(p.dps(),0)}`, `Damage: ${fmt(s.damage,2)}`, `Attack Speed: ${fmt(s.attackSpeed,2)}/s`, `Maximum Life: ${fmt(s.maxLife,0)}`, `Life Regen: ${fmt(s.lifeRegen,2)}/s`, `Armor: ${fmt(s.armor,0)}`, `Crit Chance: ${fmt(s.critChance,2)}%`, `Crit Damage: ${fmt(s.critDamage,0)}%`, `Move Speed: ${fmt(s.moveSpeed,0)}`, `Magic Find: ${fmt(s.magicFind,0)}%`];
+                panel.innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+            },
+            renderLoot() {
+                const wrap = this.elements.lootGrid; wrap.innerHTML = "";
+                const statKey = this.elements.sortStat.value, typeKey = this.elements.sortTypeSel.value, levelFilter = parseInt(this.elements.sortLevel.value) || 0;
+                let arr = [...Game.player.loot];
+                if (levelFilter > 0) { arr = arr.filter(item => item.ilvl === levelFilter); }
+                arr.sort((a, b) => {
+                    if (a.locked && !b.locked) return -1; if (b.locked && !a.locked) return 1;
+                    if (typeKey) { const at = a.type === typeKey ? 0 : 1, bt = b.type === typeKey ? 0 : 1; if (at !== bt) return at - bt; }
+                    if (statKey) { const av = a.affixes.find(x => x.stat === statKey)?.value ?? -Infinity, bv = b.affixes.find(x => x.stat === statKey)?.value ?? -Infinity; if (bv !== av) return bv - av; }
+                    const rar = RAR_ORDER.indexOf(b.rarity) - RAR_ORDER.indexOf(a.rarity); if (rar !== 0) return rar;
+                    if (a.type !== b.type) return a.type.localeCompare(b.type);
+                    return a.id.localeCompare(b.id);
+                });
+                for (const it of arr) { wrap.appendChild(it.toHTML('loot')); }
+                this.refreshHighlights(); this.refreshUpgradeButton();
+            },
+            renderInventory() {
+                const grid = this.elements.invGrid; grid.innerHTML = "";
+                const order = ["Ring", "Helmet", "Gun", "Belt", "Chest", "Boots"];
+                for (const t of order) {
+                    const slot = document.createElement("div"); slot.className = "slot"; slot.dataset.type = t;
+                    const it = Game.player.inv[t];
+                    if (it) { slot.appendChild(it.toHTML('inventory')); } 
+                    else { const ph = document.createElement("div"); ph.className = "placeholder"; ph.textContent = ({ Gun: "🔫", Helmet: "👑", Chest: "🥻", Boots: "👞", Belt: "🩹", Ring: "💍" })[t]; slot.appendChild(ph); }
+                    grid.appendChild(slot);
+                    slot.addEventListener("dragover", e => e.preventDefault());
+                    slot.addEventListener("drop", e => {
+                        e.preventDefault();
+                        const data = JSON.parse(e.dataTransfer.getData("text/plain"));
+                        if (data.kind === "item") {
+                            const item = Game.player.loot.find(it => it.id === data.id) || Object.values(Game.player.inv).find(it => it && it.id === data.id);
+                            if (!item || item.type !== t) return;
+                            if (item.ilvl > Game.player.level) { UI.showNotification("Yetersiz Seviye!"); return; }
+                            const li = Game.player.loot.findIndex(x => x.id === item.id);
+                            if (li >= 0) Game.player.loot.splice(li, 1);
+                            const prev = Game.player.inv[t];
+                            if (prev) Game.player.loot.unshift(prev);
+                            Game.player.inv[t] = item;
+                            UI.renderInventory(); UI.renderLoot(); UI.renderStats();
+                        }
+                    });
+                }
+                this.refreshHighlights(); this.refreshUpgradeButton();
+            },
+            getSelectedItem() {
+                const inLoot = Game.player.loot.find(i => i.selected);
+                if (inLoot) return inLoot;
+                for (const k of Object.keys(Game.player.inv)) { const it = Game.player.inv[k]; if (it && it.selected) return it; }
+                return null;
+            },
+            refreshUpgradeButton() {
+                const btn = this.elements.upgradeBtn;
+                const it = this.getSelectedItem();
+                if (!it) { btn.textContent = "Upgrade Selected"; btn.disabled = true; return; }
+                const cost = UPGRADE_COST[it.rarity];
+                btn.textContent = `Upgrade Selected (${cost} Essence)`;
+                btn.disabled = Game.player.essence < cost;
+            },
+            showLevelUp() {
+                const list = this.elements.levelOptions; list.innerHTML = "";
+                this.elements.levelModal.classList.remove("hidden");
+                for (const opt of LEVEL_UP_CHOICES) {
+                    const b = document.createElement("button");
+                    b.className = "btn"; b.style.background = "#111"; b.style.color = "#fff"; b.style.borderRadius = "10px"; b.style.padding = "12px";
+                    b.textContent = opt.label;
+                    b.onclick = () => { opt.apply(Game.player); UI.renderStats(); UI.updateHUD(); UI.hideLevelUp(); Game.pause(false); };
+                    list.appendChild(b);
+                }
+            },
+            hideLevelUp() { this.elements.levelModal.classList.add("hidden"); },
+            updateButtonStates() { this.elements.nextWave.disabled = Game.justDied; },
+            updateBuffs() {
+                const container = document.getElementById("buffContainer");
+                if (!container) return;
+                const p = Game.player;
+                let hasBuffs = false;
+                container.innerHTML = "";
+                if (p.frenzyStacks > 0) {
+                    hasBuffs = true;
+                    const frenzyIcon = document.createElement("div");
+                    frenzyIcon.className = "buff-icon";
+                    frenzyIcon.innerHTML = `🏃 <span>${p.frenzyTimer.toFixed(1)}s (${p.frenzyStacks})</span>`;
+                    container.appendChild(frenzyIcon);
+                }
+                const equippedChest = p.inv.Chest;
+                if (equippedChest && equippedChest.uniqueId === 'UNIQUE_CHEST_GUARDIAN') {
+                    if (p.guardianShieldActive) {
+                        hasBuffs = true;
+                        const shieldIcon = document.createElement("div");
+                        shieldIcon.className = "buff-icon";
+                        shieldIcon.innerHTML = `🛡️ <span>${p.guardianShieldTimer.toFixed(1)}s</span>`;
+                        container.appendChild(shieldIcon);
+                    } else if (p.guardianShieldCooldown > 0) {
+                        hasBuffs = true;
+                        const cooldownIcon = document.createElement("div");
+                        cooldownIcon.className = "buff-icon cooldown-icon";
+                        cooldownIcon.innerHTML = `⏳ <span>${p.guardianShieldCooldown.toFixed(1)}s</span>`;
+                        container.appendChild(cooldownIcon);
+                    }
+                }
+                const equippedBoots = p.inv.Boots;
+                if (p.blinkCooldown > 0 && equippedBoots && equippedBoots.uniqueId === 'UNIQUE_BOOTS_BLINK') {
+                    hasBuffs = true;
+                    const blinkCdIcon = document.createElement("div");
+                    blinkCdIcon.className = "buff-icon cooldown-icon";
+                    blinkCdIcon.innerHTML = `💨 <span>${p.blinkCooldown.toFixed(1)}s</span>`;
+                    container.appendChild(blinkCdIcon);
+                }
+                const equippedBelt = p.inv.Belt;
+                if (equippedBelt) {
+                    if (equippedBelt.uniqueId === 'UNIQUE_BELT_JUGGERNAUT' && p.juggernautStacks > 0) {
+                        hasBuffs = true;
+                        const juggernautIcon = document.createElement("div");
+                        juggernautIcon.className = "buff-icon";
+                        juggernautIcon.innerHTML = `🗿 <span>${p.juggernautStacks}</span>`;
+                        container.appendChild(juggernautIcon);
+                    }
+                    if (equippedBelt.uniqueId === 'UNIQUE_BELT_NOVABLAST' && p.novaHitCounter > 0) {
+                        hasBuffs = true;
+                        const novaIcon = document.createElement("div");
+                        novaIcon.className = "buff-icon";
+                        novaIcon.innerHTML = `💥 <span>${p.novaHitCounter} / 5</span>`;
+                        container.appendChild(novaIcon);
+                    }
+                }
+                const equippedRing = p.inv.Ring;
+                if (p.greedBuffTimer > 0 && equippedRing && equippedRing.uniqueId === 'UNIQUE_RING_GREED') {
+                    hasBuffs = true;
+                    const greedIcon = document.createElement("div");
+                    greedIcon.className = "buff-icon";
+                    greedIcon.innerHTML = `💰 <span>${p.greedBuffTimer.toFixed(1)}s</span>`;
+                    container.appendChild(greedIcon);
+                }
+                if (hasBuffs) { container.classList.remove("hidden"); } 
+                else { container.classList.add("hidden"); }
+            },
+            showNotification(message) {
+                const container = document.getElementById("notification-container");
+                const notif = document.createElement("div");
+                notif.className = "notification";
+                notif.textContent = message;
+                container.appendChild(notif);
+                setTimeout(() => notif.remove(), 4000);
+            }
+        };
+        document.getElementById("startBtn").addEventListener("click", () => { Game.player.wave = 9; Game.startArena(false); }); ///debug Game.player.wave = 9; dalga 10dan başla demek
+        document.getElementById("pauseBtn").addEventListener("click", () => Game.pause());
+        document.getElementById("nextWave").addEventListener("click", () => Game.startArena(false));
+        document.getElementById("sameWave").addEventListener("click", () => Game.startArena(true));
+        document.getElementById("upgradeBtn").addEventListener("click", () => {
+            const it = UI.getSelectedItem();
+            if (!it) { UI.showNotification("Önce bir item seç."); return; }
+            const cost = UPGRADE_COST[it.rarity];
+            if (Game.player.essence < cost) { UI.showNotification("Yetersiz essence!"); return; }
+            Game.player.essence -= cost;
+            it.upgrade(); UI.renderLoot(); UI.renderInventory(); UI.renderStats(); UI.syncEssence();
+        });
+        document.getElementById("dismSel").addEventListener("click", () => {
+            const keep = []; let gained = 0;
+            for (const it of Game.player.loot) { if (it.selected && !it.locked) { gained += it.essenceYield(); } else keep.push(it); }
+            Game.player.loot = keep; Game.player.essence += gained; UI.renderLoot(); UI.syncEssence();
+        });
+        document.getElementById("dismAll").addEventListener("click", () => UI.elements.confirmModal.classList.remove("hidden"));
+        document.getElementById("confirmNo").addEventListener("click", () => UI.elements.confirmModal.classList.add("hidden"));
+        document.getElementById("confirmYes").addEventListener("click", () => {
+            let gained = 0; const keep = [];
+            for (const it of Game.player.loot) { if (it.locked) keep.push(it); else gained += it.essenceYield(); }
+            Game.player.loot = keep; Game.player.essence += gained; UI.renderLoot(); UI.syncEssence(); UI.elements.confirmModal.classList.add("hidden");
+        });
+        document.getElementById("clearSel").addEventListener("click", () => {
+            for (const it of Game.player.loot) it.selected = false;
+            for (const k of Object.keys(Game.player.inv)) { const it = Game.player.inv[k]; if (it) it.selected = false; }
+            UI.renderLoot(); UI.renderInventory();
+        });
+        document.getElementById("sortStat").addEventListener("change", () => UI.renderLoot());
+        document.getElementById("sortTypeSel").addEventListener("change", () => UI.renderLoot());
+        document.getElementById("sortLevel").addEventListener("input", () => UI.renderLoot());
+        document.getElementById("debugItemBtn").addEventListener("click", () => {
+            const playerLevel = Game.player.level;
+            const randomType = choice(TYPE_KEYS);
+            const newItem = new Item({ type: randomType, rarity: 'U', ilvl: -1 });
+            Game.player.loot.unshift(newItem);
+            UI.renderLoot();
+            console.log(`DEBUG: Seviye ${playerLevel} bir ${newItem.name} (${randomType}) oluşturuldu.`);
+        });
+        window.addEventListener("load", () => { Game.init(); });
+    </script>
+</body>
+
+</html>
